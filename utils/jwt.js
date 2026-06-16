@@ -1,10 +1,11 @@
 const env = require("../config/env");
 const jwt = require("jsonwebtoken");
 
-const generateAccessToken = (u_id)=>{
+const generateAccessToken = (user)=>{
     return jwt.sign(
         {
-            id:u_id
+            id:user._id,
+            role:user.role
         },
         env.JWT_SECRET,
         {
@@ -14,10 +15,11 @@ const generateAccessToken = (u_id)=>{
 };
 
 
-const generateRefreshToken = (u_id) =>{
+const generateRefreshToken = (user) =>{
     return jwt.sign(
         {
-            id:u_id
+            id:user._id,
+            role:user.role
         },
         env.JWT_REFRESH_SECRET,
         {

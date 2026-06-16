@@ -39,6 +39,7 @@ const registerUser = async(data)=>{
 }
 
 const loginUser = async (email,password)=>{
+    console.log("email:",email);
     const user = await User.findOne({email});
     if(!user){
         throw new Error("User doesn't exist!");
@@ -47,10 +48,12 @@ const loginUser = async (email,password)=>{
     if(!ismatch){
         throw new Error("Password MisMatch");
     }
-    const accessToken = generateAccessToken(user._id);
+    const accessToken = generateAccessToken(user);
     // console.log("accessToken............................:"accessToken);
-    const refreshToken = generateRefreshToken(user._id);
+    const refreshToken = generateRefreshToken(user);
     // console.log("RefreshToken....................:",refreshToken)
+    console.log("User.....",user);
+    console.log("Email....",email);
     user.refreshToken = refreshToken;
     await user.save();
     return{

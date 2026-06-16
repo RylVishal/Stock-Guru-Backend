@@ -11,7 +11,7 @@ try{
     }
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token,env.JWT_SECRET);
-    // console.log("decoded.................................:",decoded);
+    console.log("decoded.................................:",decoded);
     req.user = decoded;
     // console.log("req....................::",req)
     next();
