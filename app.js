@@ -8,6 +8,8 @@ const errorMiddleware = require("./middlewares/errorMiddleware");
 const kycRoutes = require("./routes/kycRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const marketRoutes = require("./routes/marketRoutes");
+const healthRoutes = require("./routes/healthRoutes");
+const PortfolioRoutes = require("./routes/portfolioRoutes");
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -19,9 +21,11 @@ console.log("authRoutes:", authRoutes);
 app.use( "/api/kyc",kycRoutes);
 app.use("/api/admin",adminRoutes);
 app.use("/api/market",marketRoutes);
+app.use("/api/portfolio",PortfolioRoutes);
 app.use(errorMiddleware);
 app.use("/api-docs",
     swaggerUi.serve,
     swaggerUi.setup(swaggerSpec)
 );
+app.use("/",healthRoutes);
 module.exports = app;
