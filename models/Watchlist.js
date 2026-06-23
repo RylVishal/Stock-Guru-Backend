@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
-const holdingSchema = new mongoose.Schema({
+const watchlistSchema = new mongoose.Schema(
+{
     userId:{
         type:mongoose.Schema.Types.ObjectId,
         ref:"User",
@@ -17,30 +18,18 @@ const holdingSchema = new mongoose.Schema({
         required:true
     },
 
-    quantity:{
-        type:Number,
-        required:true
-    },
-
-    avgPrice:{
-        type:Number,
+    searchId:{
+        type:String,
         required:true
     }
-},{
+},
+{
     timestamps:true
-});
-holdingSchema.index(
-    {
-        userId:1,
-        symbol:1
-    },
-    {
-        unique:true
-    }
-);
-module.exports = mongoose.model(
-    "Holding",
-    holdingSchema
+}
 );
 
-
+module.exports =
+mongoose.model(
+    "Watchlist",
+    watchlistSchema
+);

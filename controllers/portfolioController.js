@@ -3,27 +3,31 @@ const {
     sellStockService,
     getHoldingsService,
     getHistoryService,
-    getSummaryService
+    getSummaryService,
+    getAnalyticsService
 } = require("../services/portfolioService");
 
 const buyStock = async(req,res,next)=>{
     try{
-        const result = await buyStockService(
-            req.user.id,
-            req.body
-        );
+
+        const result =
+            await buyStockService(
+                req.user.id,
+                req.body
+            );
+
         res.status(200).json(result);
-    }
-    catch(err){
+
+    }catch(err){
         next(err);
     }
-}
+};
 
 const sellStock = async (req,res,next)=>{
     try{
         const result = await sellStockService(
             req.user.id,
-            req.user
+            req.body
         );
         res.status(200).json(result);
     }
@@ -66,11 +70,31 @@ const getSummary = async (req,res,next)=>{
     next(err);
    }
 }
+const getAnalytics = async(
+    req,
+    res,
+    next
+)=>{
+    try{
+
+        const result =
+            await getAnalyticsService(
+                req.user.id
+            );
+
+        res.status(200)
+           .json(result);
+
+    }catch(err){
+        next(err);
+    }
+};
 
 module.exports = {
     buyStock,
     sellStock,
     getHoldings,
     getHistory,
-    getSummary
+    getSummary,
+    getAnalytics
 };

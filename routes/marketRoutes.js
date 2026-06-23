@@ -1,13 +1,17 @@
 const express = require("express");
 const router = express.Router();
+
 const {
     mostBought,
     topGainers,
     topLosers,
     trendingSectors,
-    news
+    news,
+    stockDetails,
+    searchStocks,
+    getChart,
+    candles
 } = require("../controllers/marketController");
-
 /**
  * @swagger
  * /market/most-bought:
@@ -18,25 +22,9 @@ const {
  *     description: Returns the most bought stocks on Groww.
  *     responses:
  *       200:
- *         description: Successfully fetched stocks
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 exploreCompanies:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/MarketStock'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: Most bought stocks fetched successfully
  */
 router.get("/most-bought", mostBought);
-
 /**
  * @swagger
  * /market/top-gainers:
@@ -48,24 +36,8 @@ router.get("/most-bought", mostBought);
  *     responses:
  *       200:
  *         description: Top gainers fetched successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 stocks:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/MarketStock'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/top-gainers", topGainers);
-
 /**
  * @swagger
  * /market/top-losers:
@@ -77,24 +49,8 @@ router.get("/top-gainers", topGainers);
  *     responses:
  *       200:
  *         description: Top losers fetched successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 stocks:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/MarketStock'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/top-losers", topLosers);
-
 /**
  * @swagger
  * /market/trending-sectors:
@@ -102,25 +58,12 @@ router.get("/top-losers", topLosers);
  *     tags:
  *       - Market
  *     summary: Get Trending Sectors
- *     description: Returns sectors with highest market movement.
+ *     description: Returns trending market sectors.
  *     responses:
  *       200:
  *         description: Trending sectors fetched successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/TrendingSector'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.get("/trending-sectors", trendingSectors);
-
 /**
  * @swagger
  * /market/news:
@@ -128,26 +71,90 @@ router.get("/trending-sectors", trendingSectors);
  *     tags:
  *       - Market
  *     summary: Get Market News
- *     description: Returns latest stock market news.
+ *     description: Returns latest market news.
  *     responses:
  *       200:
- *         description: Market news fetched successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 feed:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/MarketNews'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *         description: News fetched successfully
  */
 router.get("/news", news);
-
+/**
+ * @swagger
+ * /market/stock/{searchId}:
+ *   get:
+ *     tags:
+ *       - Market
+ *     summary: Get Stock Details
+ *     description: Returns detailed company information.
+ *     parameters:
+ *       - in: path
+ *         name: searchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: infosys-ltd
+ *     responses:
+ *       200:
+ *         description: Stock details fetched successfully
+ */
+router.get("/stock/:searchId", stockDetails);
+/**
+ * @swagger
+ * /market/search:
+ *   get:
+ *     tags:
+ *       - Market
+ *     summary: Search Stocks
+ *     description: Search stocks by company name or symbol.
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: infy
+ *     responses:
+ *       200:
+ *         description: Search results returned successfully
+ */
+router.get("/search", searchStocks);
+/**
+ * @swagger
+ * /market/chart/{symbol}:
+ *   get:
+ *     tags:
+ *       - Market
+ *     summary: Get Chart Data
+ *     description: Returns simplified chart data for frontend line charts.
+ *     parameters:
+ *       - in: path
+ *         name: symbol
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: INFY
+ *     responses:
+ *       200:
+ *         description: Chart data fetched successfully
+ */
+router.get("/chart/:symbol", getChart);
+/**
+ * @swagger
+ * /market/candles/{symbol}:
+ *   get:
+ *     tags:
+ *       - Market
+ *     summary: Get OHLC Candlestick Data
+ *     description: Returns OHLCV candle data for candlestick charts.
+ *     parameters:
+ *       - in: path
+ *         name: symbol
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: INFY
+ *     responses:
+ *       200:
+ *         description: Candle data fetched successfully
+ */
+router.get("/candles/:symbol",candles);
 module.exports = router;

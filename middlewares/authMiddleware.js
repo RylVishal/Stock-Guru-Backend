@@ -16,11 +16,13 @@ try{
     // console.log("req....................::",req)
     next();
 }
-    catch(err){
-        return res.status(401).json({
-            message:"Token Mismatch!"
-        });
-    }
+   catch(err){
+    console.log("JWT ERROR:", err.message);
+
+    return res.status(401).json({
+        message: err.message
+    });
+}
 };
 
 module.exports = authMiddleware;

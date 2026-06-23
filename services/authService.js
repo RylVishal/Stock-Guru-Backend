@@ -1,4 +1,5 @@
 const User = require("../models/user");
+const Portfolio = require("../models/portfolio");
 const bcrypt = require("bcryptjs");
 const {registerSchema} = require("../validations/authValidation");
 const {
@@ -34,7 +35,11 @@ const registerUser = async(data)=>{
     email,
     password:hashedPassword
   });
-
+  await Portfolio.create({
+    userId:user._id,
+    cashBalance:100000
+  });
+  
   return user;
 }
 
@@ -49,9 +54,9 @@ const loginUser = async (email,password)=>{
         throw new Error("Password MisMatch");
     }
     const accessToken = generateAccessToken(user);
-    // console.log("accessToken............................:"accessToken);
+    console.log("accessToken............................:",accessToken);
     const refreshToken = generateRefreshToken(user);
-    // console.log("RefreshToken....................:",refreshToken)
+    console.log("RefreshToken....................:",refreshToken)
     console.log("User.....",user);
     console.log("Email....",email);
     user.refreshToken = refreshToken;
