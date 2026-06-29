@@ -1,4 +1,71 @@
 const growwClient = require("./growwClient");
+
+const CHART_CONFIG = {
+    "1D": {
+        path: "daily",
+        params: {
+            intervalInMinutes: 1
+        }
+    },
+
+    "1W": {
+        path: "weekly",
+        params: {
+            intervalInMinutes: 5
+        }
+    },
+
+    "1M": {
+        path: "monthly/v2",
+        params: {
+            months: 1
+        }
+    },
+
+    "3M": {
+        path: "monthly/v2",
+        params: {
+            months: 3
+        }
+    },
+
+    "6M": {
+        path: "monthly/v2",
+        params: {
+            months: 6
+        }
+    },
+
+    "1Y": {
+        path: "1y",
+        params: {
+            intervalInDays: 1
+        }
+    },
+
+    "3Y": {
+        path: "3y",
+        params: {
+            intervalInDays: 3
+        }
+    },
+
+    "5Y": {
+        path: "5y",
+        params: {
+            intervalInDays: 5
+        }
+    },
+
+    "ALL": {
+        path: "all",
+        params: {
+            noOfCandles: 300
+        }
+    }
+};
+
+
 const getMostBoughtStocks = async () => {
 
     const response = await growwClient.get(
@@ -105,34 +172,36 @@ const searchStocks = async(query)=>{
 
     return response.data;
 };
-const getChartData = async(symbol) => {
+const getChartData = async (
+    symbol,
+    range = "1D",
+    type = "line"
+) => {
+
+    const config = CHART_CONFIG[range.toUpperCase()];
+
+    if (!config) {
+        throw new Error("Invalid chart range");
+    }
+
+    const params = {
+        ...config.params
+    };
+
+    // Only send minimal=true for line charts
+    if (type === "line") {
+        params.minimal = true;
+    }
+
     const response = await growwClient.get(
-        `/v1/api/charting_service/v2/chart/delayed/exchange/NSE/segment/CASH/${symbol}/daily`,
+        `/v1/api/charting_service/v2/chart/delayed/exchange/NSE/segment/CASH/${symbol}/${config.path}`,
         {
-            params: {
-                intervalInMinutes: 1,
-                minimal: true
-            }
+            params
         }
     );
 
     return response.data;
 };
-
-const getCandles = async(symbol) => {
-
-    const response = await growwClient.get(
-        `/v1/api/charting_service/v2/chart/delayed/exchange/NSE/segment/CASH/${symbol}/daily`,
-        {
-            params: {
-                intervalInMinutes: 1
-            }
-        }
-    );
-
-    return response.data;
-};
-
 module.exports = {
     getMostBoughtStocks,
     getTopMovers,
@@ -141,6 +210,5 @@ module.exports = {
     getCompanyDetails,
     getLivePrice,
     searchStocks,
-    getChartData,
-    getCandles
+    getChartData
 };

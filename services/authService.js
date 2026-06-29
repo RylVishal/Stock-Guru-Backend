@@ -14,6 +14,7 @@ const {resetPasswordSchema} = require("../validations/authValidation")
 // console.log("USER =", User);
 // console.log("TYPE =", typeof User);
 // console.log("findOne =", User.findOne);
+const AppError = require("../utils/AppError");
 const registerUser = async(data)=>{
   const validateData = registerSchema.parse(data);
   const {
@@ -24,8 +25,9 @@ const registerUser = async(data)=>{
 
   const existinguser = await User.findOne({email});
   if(existinguser){
-    throw new Error(
-        "User Already in Use"
+    throw new AppError(
+        "User Already in Use",
+         409
     );
   }
   const hashedPassword = await bcrypt.hash(password,10);
@@ -47,11 +49,11 @@ const loginUser = async (email,password)=>{
     console.log("email:",email);
     const user = await User.findOne({email});
     if(!user){
-        throw new Error("User doesn't exist!");
+        throw new AppError("User doesn't exist!",401);
     }
     const ismatch = await bcrypt.compare(password,user.password);
     if(!ismatch){
-        throw new Error("Password MisMatch");
+        throw new AppError("Password MisMatch",401);
     }
     const accessToken = generateAccessToken(user);
     console.log("accessToken............................:",accessToken);
@@ -79,8 +81,9 @@ const logoutUser = async (user_id)=>{
 const forgotPassword = async (email)=>{
     const doesEmailExist = await User.findOne({email});
     if(!doesEmailExist){
-        throw new Error(
-            "User not found"
+        throw new AppError(
+            "User not found",
+            404
         );
     }
     const otp = generateOTP();
@@ -120,13 +123,15 @@ const verifyOTP = async(email,otp)=>{
     const storedOTP = await redisClient.get(`otp:${email}`);
     console.log("stordotp:",storedOTP)
     if(!storedOTP){
-        throw new Error(
-            "OTP Expired!"
+        throw new AppError(
+            "OTP Expired!",
+             400
         );
     }
     if(storedOTP!==otp){
-        throw new Error(
-            "Invalid OTP!"
+        throw new AppError(
+            "Invalid OTP!",
+            400
         );
     }
     return true;
@@ -135,14 +140,16 @@ const verifyOTP = async(email,otp)=>{
 const resetPassword = async(email,otp,newpassword) =>{
     const storedOTP = await redisClient.get(`otp:${email}`);
     if(!storedOTP||storedOTP!==otp){
-        throw new Error(
-            "Invalid OTP"
+        throw new AppError(
+            "Invalid OTP",
+            403
         );
     }
     const user = await User.findOne({email});
     if(!user){
-        throw new Error(
-            "User not found!"
+        throw new AppError(
+            "User not found!",
+            400
         );
     }
     const {password} = resetPasswordSchema.parse({

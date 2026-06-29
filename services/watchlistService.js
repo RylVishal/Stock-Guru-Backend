@@ -1,6 +1,6 @@
 const Watchlist = require("../models/Watchlist");
 const { getCompanyDetails,getLivePrice } = require("./marketService");
-
+const AppError = require("../utils/AppError");
 const addToWatchlistService = async(userId, searchId)=>{
 
     const company =
@@ -19,8 +19,9 @@ const addToWatchlistService = async(userId, searchId)=>{
         });
 
     if(exists){
-        throw new Error(
-            "Already in watchlist"
+        throw new AppError(
+            "Already in watchlist",
+            409
         );
     }
 
@@ -74,8 +75,9 @@ async(userId,symbol)=>{
         });
 
     if(!stock){
-        throw new Error(
-            "Stock not found in watchlist"
+        throw new AppError(
+            "Stock not found in watchlist",
+            404
         );
     }
 

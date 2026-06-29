@@ -7,7 +7,7 @@ const {
     approve,
     reject
 } = require("../controllers/adminController");
-
+``
 router.use(authMiddleware, adminMiddleware);
 
 /**

@@ -1,6 +1,6 @@
 const KYC = require("../models/KYC");
 const { kycSchema } = require("../validations/kycValidation");
-
+const AppError = require("../utils/AppError");
 const submitKYC = async(userId,data)=>{
 
     const validatedData =
@@ -12,8 +12,9 @@ const submitKYC = async(userId,data)=>{
     });
 
     if(existingKYC){
-        throw new Error(
-            "KYC already submitted"
+        throw new AppError(
+            "KYC already submitted",
+            409
         );
     }
  console.log("Validated Data:", validatedData);
@@ -32,8 +33,9 @@ const getKYCStatus = async(userId)=>{
     });
 
     if(!kyc){
-        throw new Error(
-            "KYC not found"
+        throw new AppError(
+            "KYC not found",
+            404
         );
     }
 

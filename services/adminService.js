@@ -1,6 +1,6 @@
 const KYC = require("../models/KYC");
 const User = require("../models/user");
-
+const AppError = require("../utils/AppError");
 const getPendingKYCs = async()=>{
     return await KYC.find({
         status:"pending"
@@ -13,8 +13,9 @@ const getPendingKYCs = async()=>{
 const approveKYC = async(kycId)=>{
     const kyc = await KYC.findById(kycId);
     if(!kyc){
-        throw new Error(
-            "KYC not found"
+        throw new AppError(
+            "KYC not found",
+            404
         );
     }
     kyc.status = "approved";
@@ -32,8 +33,9 @@ const approveKYC = async(kycId)=>{
   const rejectKYC = async(kycId,reason)=>{
     const kyc = await KYC.findById(kycId);
     if(!kyc){
-        throw new Error(
-            "KYC not found!"
+        throw new AppError(
+            "KYC not found!",
+            404
         );
     }
     kyc.status = "rejected";

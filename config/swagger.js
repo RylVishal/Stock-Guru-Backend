@@ -123,7 +123,7 @@ const options = {
           }
         },
 
-        // ─── Market ───────────────────────────────────────────────────
+        // ─── Market ────────────────────────────────────────────────────────
         MostBoughtCompanyInfo: {
           type: "object",
           properties: {

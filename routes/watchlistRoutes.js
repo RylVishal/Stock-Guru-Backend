@@ -13,6 +13,8 @@ const {
 } = require(
     "../controllers/watchlistController"
 );
+const validate = require("../middlewares/validate");
+const {addToWatchlistSchema} = require("../validations/watchlistValidation");
 /**
  * @swagger
  * /watchlist/add:
@@ -29,7 +31,7 @@ const {
  *           example:
  *             searchId: infosys-ltd
  */
-router.post("/add",authMiddleware,addToWatchlist);
+router.post("/add",authMiddleware,validate(addToWatchlistSchema),addToWatchlist);
 /**
  * @swagger
  * /watchlist:

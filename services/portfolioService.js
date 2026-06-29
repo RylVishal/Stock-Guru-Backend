@@ -5,19 +5,22 @@ const {
     getCompanyDetails,
     getLivePrice
 } = require("./marketService");
+const AppError = require("../utils/AppError");
     const buyStockService = async(userId,data)=>{
     const {searchId,quantity} = data;
     const portfolio = await Portfolio.findOne({userId});
-
+    console.log("SearchId:",searchId);
+    console.log("Quantity: ",quantity);
     if(!portfolio){
-    throw new Error("Portfolio not found");
+    throw new AppError("Portfolio not found",404);
     }   
     if(!searchId){
-        throw new Error("searchId is required");
+        
+        throw new AppError("searchId is required",400);
     }
 
     if(!quantity || quantity <= 0){
-        throw new Error("Invalid quantity");
+        throw new AppError("Invalid quantity",400);
     }
     const companyData = await getCompanyDetails(searchId);
     const symbol = companyData.header.nseScriptCode;
@@ -25,7 +28,7 @@ const {
     const currentPrice = await getLivePrice(symbol);
     const totalCost = currentPrice * quantity;
     if(portfolio.cashBalance < totalCost){
-    throw new Error("Insufficient Funds");
+    throw new AppError("Insufficient Funds",400);
     }
     let holding = await Holding.findOne({userId,symbol});
     if(holding){
@@ -84,18 +87,18 @@ const sellStockService = async(userId,data)=>{
     const { symbol, quantity } = data;
 
     if(!symbol){
-        throw new Error("Symbol is required");
+        throw new AppError("Symbol is required",400);
     }
 
     if(!quantity || quantity <= 0){
-        throw new Error("Invalid quantity");
+        throw new AppError("Invalid quantity",400);
     }
 
     const portfolio =
         await Portfolio.findOne({ userId });
 
     if(!portfolio){
-        throw new Error("Portfolio not found");
+        throw new AppError("Portfolio not found",404);
     }
 
     const holding =
@@ -105,14 +108,16 @@ const sellStockService = async(userId,data)=>{
         });
 
     if(!holding){
-        throw new Error(
-            "You don't own this stock"
+        throw new AppError(
+            "You don't own this stock",
+            409
         );
     }
 
     if(quantity > holding.quantity){
         throw new Error(
-            "Insufficient shares"
+            "Insufficient shares",
+            400
         );
     }
 
@@ -224,8 +229,9 @@ const getAnalyticsService = async(userId)=>{
     });
 
     if(!portfolio){
-        throw new Error(
-            "Portfolio not found"
+        throw new AppError(
+            "Portfolio not found",
+            404
         );
     }
 

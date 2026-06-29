@@ -2,16 +2,17 @@ const express = require("express");
 const router = express.Router();
 
 const {
-    mostBought,
+   mostBought,
     topGainers,
     topLosers,
     trendingSectors,
     news,
     stockDetails,
     searchStocks,
-    getChart,
-    candles
+    chart
 } = require("../controllers/marketController");
+const validate = require("../middlewares/validate");
+const{searchStockSchema} = require("../validations/marketValidation");
 /**
  * @swagger
  * /market/most-bought:
@@ -116,27 +117,8 @@ router.get("/stock/:searchId", stockDetails);
  *       200:
  *         description: Search results returned successfully
  */
-router.get("/search", searchStocks);
-/**
- * @swagger
- * /market/chart/{symbol}:
- *   get:
- *     tags:
- *       - Market
- *     summary: Get Chart Data
- *     description: Returns simplified chart data for frontend line charts.
- *     parameters:
- *       - in: path
- *         name: symbol
- *         required: true
- *         schema:
- *           type: string
- *         example: INFY
- *     responses:
- *       200:
- *         description: Chart data fetched successfully
- */
-router.get("/chart/:symbol", getChart);
+router.get("/search",validate(searchStockSchema),searchStocks);
+
 /**
  * @swagger
  * /market/candles/{symbol}:
@@ -156,5 +138,5 @@ router.get("/chart/:symbol", getChart);
  *       200:
  *         description: Candle data fetched successfully
  */
-router.get("/candles/:symbol",candles);
+router.get("/chart/:symbol", chart);
 module.exports = router;

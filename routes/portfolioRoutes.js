@@ -13,6 +13,8 @@ const {
     getSummary,
     getAnalytics
 } = require("../controllers/portfolioController");
+const {buyStockSchema,sellStockSchema} = require("../validations/portfolioValidation");
+const validate = require("../middlewares/validate");
 /**
  * @swagger
  * /portfolio/buy:
@@ -36,6 +38,7 @@ const {
 router.post(
     "/buy",
     authMiddleware,
+    validate(buyStockSchema),
     buyStock
 );
 /**
@@ -61,6 +64,7 @@ router.post(
 router.post(
     "/sell",
     authMiddleware,
+    validate(sellStockSchema),
     sellStock
 );
 /**

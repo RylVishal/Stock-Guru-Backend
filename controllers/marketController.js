@@ -4,9 +4,9 @@ const {
     getTrendingSectors,
     getNews,
     getCompanyDetails,
-    searchStocks: searchStocksService,
-    getChartData,
-    getCandles
+    getLivePrice,
+    searchStocks:searchStocksService,
+    getChartData
 } = require("../services/marketService");
 
 const mostBought = async (req, res, next) => {
@@ -82,12 +82,21 @@ const searchStocks = async (req, res, next) => {
     }
 };
 
-const getChart = async (req, res, next) => {
+const chart = async (req, res, next) => {
     try {
+
         const { symbol } = req.params;
 
-        const data =
-            await getChartData(symbol);
+        const {
+            range = "1D",
+            type = "line"
+        } = req.query;
+
+        const data = await getChartData(
+            symbol,
+            range,
+            type
+        );
 
         res.status(200).json(data);
 
@@ -95,21 +104,6 @@ const getChart = async (req, res, next) => {
         next(err);
     }
 };
-const candles = async(req,res,next)=>{
-    try{
-
-        const {symbol} = req.params;
-
-        const data =
-            await getCandles(symbol);
-
-        res.status(200).json(data);
-
-    }catch(err){
-        next(err);
-    }
-};
-
 module.exports = {
     mostBought,
     topGainers,
@@ -118,6 +112,5 @@ module.exports = {
     news,
     stockDetails,
     searchStocks,
-    getChart,
-    candles
+    chart
 };
