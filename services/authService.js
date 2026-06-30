@@ -91,7 +91,7 @@ const forgotPassword = async (email)=>{
         `otp:${email}`,
         otp,
         {
-            EX:3000
+            EX:300
         }
     );
     await sendOTPEmail(email,otp);
@@ -99,7 +99,6 @@ const forgotPassword = async (email)=>{
         message:"OTP sent successfully!"
     };
 };
-
 // const forgotPassword = async(email)=>{
 
 //     console.log("Received Email:", email);
@@ -119,6 +118,7 @@ const forgotPassword = async (email)=>{
 
 //     return user;
 // };
+
 const verifyOTP = async(email,otp)=>{
     const storedOTP = await redisClient.get(`otp:${email}`);
     console.log("stordotp:",storedOTP)
