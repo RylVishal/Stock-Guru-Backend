@@ -11,7 +11,6 @@ const marketRoutes = require("./routes/marketRoutes");
 const healthRoutes = require("./routes/healthRoutes");
 const PortfolioRoutes = require("./routes/portfolioRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
-
 const app = express();
 
 // 1. Core Global Middlewares
