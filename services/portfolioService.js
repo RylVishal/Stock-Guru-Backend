@@ -69,6 +69,10 @@ const AppError = require("../utils/AppError");
     price:currentPrice,
     amount:totalCost
 });
+    await redisClient.sAdd(
+    "trackedSymbols",
+    symbol
+);
     return{
     success:true,
     message:"Stock Purchased Successfully",

@@ -10,9 +10,9 @@ const startMarketWorker = async ()=>{
     console.log("Market worker started");
     while(true){
         try{
-          const holdings = await Holding.find({},"symbol");
-          const watchlist = await Watchlist.find({},"symbol");
-          const symbols = [...holdings.map(h => h.symbol), ...watchlist.map(w => w.symbol)];
+          const symbols = await redisClient.sMembers(
+         "trackedSymbols"
+         );
           const uniqueSymbols = [...new Set(symbols)];
           console.log("Unique symbols to fetch live price:", uniqueSymbols);
           if(uniqueSymbols.length === 0){

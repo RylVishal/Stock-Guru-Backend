@@ -60,9 +60,12 @@ const stockDetails = async (req, res, next) => {
 
         const result =
             await getCompanyDetails(searchId);
-
+        
         res.status(200).json(result);
-
+        await redisClient.sAdd(
+       "trackedSymbols",
+        result.header.nseScriptCode
+);
     } catch (err) {
         next(err);
     }

@@ -24,6 +24,10 @@ const addToWatchlistService = async(userId, searchId)=>{
             409
         );
     }
+    await redisClient.sAdd(
+    "trackedSymbols",
+    symbol
+);
 
     return await Watchlist.create({
         userId,

@@ -11,6 +11,7 @@ const {
     initializeSocket
 } = require("./sockets/socket");
 
+const bootstrapTrackedSymbols = require("./workers/bootstrapTrackedSymbols");
 const server = http.createServer(app);
 
 const start = async () => {
@@ -18,7 +19,7 @@ const start = async () => {
     try {
 
         await connectDB();
-
+        await bootstrapTrackedSymbols();
         initializeSocket(server);
 
         server.listen(env.PORT, () => {
@@ -26,7 +27,6 @@ const start = async () => {
             console.log(
                 `Server running on ${env.PORT}`
             );
-
             startMarketWorker();
 
         });
