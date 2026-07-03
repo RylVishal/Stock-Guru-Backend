@@ -1,12 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
-const swaggerUi =
-require("swagger-ui-express");
 
-const swaggerFile =
-require("./docs/swagger-output.json");
-// const swaggerSpec = require("./docs/swagger");
+const { setupSwagger } = require("./docs/swagger");
 
 const authRoutes = require("./routes/authRoutes");
 const kycRoutes = require("./routes/kycRoutes");
@@ -30,11 +26,7 @@ app.use(helmet());
 
 /* ------------------------- Swagger ------------------------- */
 
-app.use(
-    "/api/docs",
-    swaggerUi.serve,
-    swaggerUi.setup(swaggerFile)
-);
+setupSwagger(app);
 
 /* ------------------------- Routes ------------------------- */
 
