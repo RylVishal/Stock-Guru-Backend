@@ -295,6 +295,7 @@ const getAnalyticsService = async(userId)=>{
             holdingCurrentValue;
 
     holdingAnalytics.push({
+    id: holding._id.toString(),
     symbol: holding.symbol,
     companyName: holding.companyName,
     quantity: holding.quantity,

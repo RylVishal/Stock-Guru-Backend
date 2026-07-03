@@ -1,50 +1,33 @@
-const {
-    OpenApiGeneratorV3
-} = require(
-    "@asteasolutions/zod-to-openapi"
-);
+const swaggerAutogen = require("swagger-autogen")();
 
-const registry =
-require("./registry");
-
-require("./auth.docs");
-require("./kyc.docs");
-require("./admin.docs");
-require("./portfolio.docs");
-require("./watchlist.docs");
-require("./market.docs");
-
-const generator =
-new OpenApiGeneratorV3(
-    registry.definitions
-);
-
-module.exports =
-generator.generateDocument({
-
-    openapi: "3.0.3",
-
+const doc = {
     info: {
         title: "Stock Guru API",
-        version: "1.0.0",
-        description:
-        "Stock Guru Backend API"
+        description: "REST API for Stock Guru",
+        version: "1.0.0"
     },
 
-    servers: [
-        {
-            url:
-            "http://localhost:5000/api"
-        }
-    ],
+    host: "localhost:5000",
 
-    components: {
-        securitySchemes: {
-            bearerAuth: {
-                type: "http",
-                scheme: "bearer",
-                bearerFormat: "JWT"
-            }
+    schemes: ["http"],
+
+    securityDefinitions: {
+        BearerAuth: {
+            type: "apiKey",
+            name: "Authorization",
+            in: "header",
+            description: "Bearer <JWT>"
         }
     }
-});
+};
+const outputFile = "./swagger-output.json";
+
+const endpointsFiles = [
+    "./app.js"
+];
+
+swaggerAutogen(
+    outputFile,
+    endpointsFiles,
+    doc
+);

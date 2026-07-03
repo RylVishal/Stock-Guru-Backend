@@ -166,7 +166,6 @@ const getAnalytics = async (req, res, next) => {
     "Portfolio analytics fetched successfully",
     data
 );
-
 validateResponse(
     analyticsResponseSchema,
     response
