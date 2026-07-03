@@ -7,85 +7,174 @@ const {
     getAnalyticsService
 } = require("../services/portfolioService");
 
-const buyStock = async(req,res,next)=>{
-    try{
+const { success } = require("../utils/responseBuilder");
+const validateResponse =
+require("../middlewares/validateResponse");
 
-        const result =
+const {
+
+    buyStockResponseSchema,
+
+    sellStockResponseSchema,
+
+    holdingsResponseSchema,
+
+    historyResponseSchema,
+
+    summaryResponseSchema,
+
+    analyticsResponseSchema
+
+} = require("../schemas/response/portfolio");
+
+const buyStock = async (req, res, next) => {
+    try {
+
+        const data =
             await buyStockService(
                 req.user.id,
                 req.body
             );
 
-        res.status(200).json(result);
+        const response = success(
+    "Stock purchased successfully",
+    data
+);
 
-    }catch(err){
+validateResponse(
+    buyStockResponseSchema,
+    response
+);
+
+return res.status(200).json(response);
+
+    } catch (err) {
         next(err);
     }
 };
 
-const sellStock = async (req,res,next)=>{
-    try{
-        const result = await sellStockService(
-            req.user.id,
-            req.body
-        );
-        res.status(200).json(result);
-    }
-    catch(err){
+const sellStock = async (req, res, next) => {
+    try {
+
+        const data =
+            await sellStockService(
+                req.user.id,
+                req.body
+            );
+
+       const response = success(
+    "Stock sold successfully",
+    data
+);
+
+validateResponse(
+    sellStockResponseSchema,
+    response
+);
+
+return res.status(200).json(response);
+
+    } catch (err) {
         next(err);
     }
 };
 
-const getHoldings = async (req,res,next)=>{
-    try{
-    const result = await getHoldingsService(
-        req.user.id
-    );
-    res.status(200).json(result);
-}
-   catch(err){
-    next(err);
-   }
-}
-const getHistory = async (req,res,next)=>{
-    try{
-    const result = await getHistoryService(
-        req.user.id
-    );
-    res.status(200).json(result);
-}
-   catch(err){
-    next(err);
-   }
-}
+const getHoldings = async (req, res, next) => {
+    try {
 
-const getSummary = async (req,res,next)=>{
-    try{
-    const result = await getSummaryService(
-        req.user.id
-    );
-    res.status(200).json(result);
-}
-   catch(err){
-    next(err);
-   }
-}
-const getAnalytics = async(
-    req,
-    res,
-    next
-)=>{
-    try{
+        const data =
+            await getHoldingsService(
+                req.user.id
+            );
 
-        const result =
+        const response = success(
+    "Holdings fetched successfully",
+    data
+);
+
+validateResponse(
+    holdingsResponseSchema,
+    response
+);
+
+return res.status(200).json(response);
+
+    } catch (err) {
+        next(err);
+    }
+};
+
+const getHistory = async (req, res, next) => {
+    try {
+
+        const data =
+            await getHistoryService(
+                req.user.id
+            );
+
+        const response = success(
+    "Transaction history fetched successfully",
+    data
+);
+
+validateResponse(
+    historyResponseSchema,
+    response
+);
+
+return res.status(200).json(response);
+
+    } catch (err) {
+        next(err);
+    }
+};
+
+const getSummary = async (req, res, next) => {
+    try {
+
+        const data =
+            await getSummaryService(
+                req.user.id
+            );
+
+        const response = success(
+    "Portfolio summary fetched successfully",
+    data
+);
+
+validateResponse(
+    summaryResponseSchema,
+    response
+);
+
+return res.status(200).json(response);
+
+    } catch (err) {
+        next(err);
+    }
+};
+
+const getAnalytics = async (req, res, next) => {
+    try {
+
+        const data =
             await getAnalyticsService(
                 req.user.id
             );
 
-        res.status(200)
-           .json(result);
+        const response = success(
+    "Portfolio analytics fetched successfully",
+    data
+);
 
-    }catch(err){
+validateResponse(
+    analyticsResponseSchema,
+    response
+);
+
+return res.status(200).json(response);
+
+    } catch (err) {
         next(err);
     }
 };

@@ -1,92 +1,198 @@
-const {registerUser,
+const {
+    registerUser,
     loginUser,
     logoutUser,
     forgotPassword,
     verifyOTP,
-    resetPassword } = require("../services/authService");
+    resetPassword
+} = require("../services/authService");
 
-const register = async(req,res,next)=>{
-    try{
+const { success } = require("../utils/responseBuilder");
+const validateResponse = require("../middlewares/validateResponse");
+
+const {
+    registerResponseSchema,
+    loginResponseSchema,
+    messageResponseSchema
+} = require("../schemas/response/auth");
+
+const register = async (req, res, next) => {
+    try {
+        console.log("➡️ Controller entered");
+
         const user = await registerUser(req.body);
-        res.status(201).json({
-            message:"User created successfully",
+
+        console.log("➡️ Service returned");
+
+        const response = success(
+            "User created successfully",
             user
-        });
+        );
+
+        console.log("➡️ Response built");
+
+        validateResponse(
+            registerResponseSchema,
+            response
+        );
+
+        console.log("➡️ Response validated");
+
+        return res.status(201).json(response);
+
+    } catch (err) {
+        console.error(err);
+        next(err);
     }
-    catch(err){
+};
+const login = async (req, res, next) => {
+    try {
+
+        const {
+            email,
+            password
+        } = req.body;
+
+        const data =
+            await loginUser(email, password);
+
+       const response = success(
+    "Login successful",
+    data
+);
+
+validateResponse(
+    loginResponseSchema,
+    response
+);
+
+return res
+    .status(200)
+    .json(response);
+
+    } catch (err) {
         next(err);
     }
 };
 
-const login = async (req,res,next)=>{
-  try{
-   const {
-        email,
-        password
-    } = req.body;
-    const tokens = await loginUser(email,password);
-    // console.log("TOKENS..............................:", tokens);
-    return res.status(200).json(tokens);
-  }
-  catch(err){
-    next(err);
-  }
-};
+const logout = async (req, res, next) => {
+    try {
 
-const logout = async (req,res,next)=>{
-    try{
-        // console.log("req.user:..........................."req.user);
         await logoutUser(req.user.id);
-        res.status(200).json({
-            message:"User LoggedOut"
-        });
-    }
-    catch(err){
+
+const response = success(
+    "User logged out successfully"
+);
+
+validateResponse(
+    messageResponseSchema,
+    response
+);
+
+return res
+    .status(200)
+    .json(response);
+    } 
+    catch (err) {
         next(err);
     }
 };
 
-const refreshAccessToken = async(req,res,next)=>{
-    try{
-        // logic later
-    }
-    catch(err){
+const refreshAccessToken = async (req, res, next) => {
+    try {
+
+        // Implement later
+
+    } catch (err) {
         next(err);
     }
 };
 
-const forgotPasswordController = async(req,res,next)=>{
-    try{
-      const {email} = req.body;
-      const result = await forgotPassword(email);
-      res.status(200).json(result);
-    }
-    catch(err){
+const forgotPasswordController = async (req, res, next) => {
+    try {
+
+        const { email } = req.body;
+
+        await forgotPassword(email);
+
+        const response = success(
+    "OTP sent successfully"
+);
+
+validateResponse(
+    messageResponseSchema,
+    response
+);
+
+return res
+    .status(200)
+    .json(response);
+
+    } catch (err) {
         next(err);
     }
 };
 
-const verifyOTPController = async(req,res,next)=>{
-    try{
-      const {email,otp} = req.body;
-      const result = await verifyOTP(email,otp);
-      res.status(200).json(result);
-    }
-    catch(err){
+const verifyOTPController = async (req, res, next) => {
+    try {
+
+        const {
+            email,
+            otp
+        } = req.body;
+
+        await verifyOTP(email, otp);
+
+        const response = success(
+    "OTP verified successfully"
+);
+
+validateResponse(
+    messageResponseSchema,
+    response
+);
+
+return res
+    .status(200)
+    .json(response);
+
+    } catch (err) {
         next(err);
     }
 };
 
-const resetPasswordController = async(req,res,next)=>{
-    try{
-      const{email,otp,newpassword} = req.body;
-      const result = await resetPassword(email,otp,newpassword);
-      res.status(200).json(result);
-    }
-    catch(err){
+const resetPasswordController = async (req, res, next) => {
+    try {
+
+        const {
+            email,
+            otp,
+            newPassword
+        } = req.body;
+        await resetPassword(
+            email,
+            otp,
+            newPassword
+        );
+
+        const response = success(
+    "Password reset successfully"
+);
+
+validateResponse(
+    messageResponseSchema,
+    response
+);
+
+return res
+    .status(200)
+    .json(response);
+
+    } catch (err) {
         next(err);
     }
 };
+
 module.exports = {
     register,
     login,
@@ -94,5 +200,4 @@ module.exports = {
     forgotPasswordController,
     verifyOTPController,
     resetPasswordController
-    // refreshAccessToken
 };

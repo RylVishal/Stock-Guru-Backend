@@ -1,15 +1,48 @@
 const KYC = require("../models/KYC");
 const User = require("../models/user");
 const AppError = require("../utils/AppError");
-const getPendingKYCs = async()=>{
-    return await KYC.find({
-        status:"pending"
-    }).populate(
+const getPendingKYCs = async () => {
+
+    const kycs = await KYC.find({
+        status: "pending"
+    })
+    .populate(
         "user",
         "name email"
-    );
-};
+    )
+    .lean();
 
+    return kycs.map((kyc) => ({
+
+        id: kyc._id.toString(),
+
+        user: {
+            id: kyc.user._id.toString(),
+            name: kyc.user.name,
+            email: kyc.user.email
+        },
+
+        fullName: kyc.fullName,
+
+        panNumber: kyc.panNumber,
+
+        aadhaarNumber: kyc.aadhaarNumber,
+
+        address: kyc.address,
+
+        dob: kyc.dob.toISOString().split("T")[0],
+
+        status: kyc.status,
+
+        rejectionReason:
+            kyc.rejectionReason ?? null,
+
+        createdAt:
+            kyc.createdAt.toISOString()
+
+    }));
+
+};
 const approveKYC = async(kycId)=>{
     const kyc = await KYC.findById(kycId);
     if(!kyc){
@@ -27,7 +60,17 @@ const approveKYC = async(kycId)=>{
         }
     );
     console.log("Kyc: ",kyc);
-    return kyc;
+    return {
+    id: kyc._id.toString(),
+    fullName: kyc.fullName,
+    panNumber: kyc.panNumber,
+    aadhaarNumber: kyc.aadhaarNumber,
+    address: kyc.address,
+    dob: kyc.dob.toISOString().split("T")[0],
+    status: kyc.status,
+    rejectionReason: kyc.rejectionReason ?? null,
+    createdAt: kyc.createdAt.toISOString()
+};
 };
 
   const rejectKYC = async(kycId,reason)=>{
@@ -39,11 +82,21 @@ const approveKYC = async(kycId)=>{
         );
     }
     kyc.status = "rejected";
-    await kyc.save();
-    return{
-        kyc,
-        reason
-    };
+kyc.rejectionReason = reason;
+
+await kyc.save();
+
+return {
+    id: kyc._id.toString(),
+    fullName: kyc.fullName,
+    panNumber: kyc.panNumber,
+    aadhaarNumber: kyc.aadhaarNumber,
+    address: kyc.address,
+    dob: kyc.dob.toISOString().split("T")[0],
+    status: kyc.status,
+    rejectionReason: kyc.rejectionReason,
+    createdAt: kyc.createdAt.toISOString()
+};
   };
 
   module.exports = {

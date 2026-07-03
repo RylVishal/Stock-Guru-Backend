@@ -2,16 +2,20 @@ const {
     addToWatchlistService,
     getWatchlistService,
     removeFromWatchlistService
-} = require(
-    "../services/watchlistService"
-);
+} = require("../services/watchlistService");
 
-const addToWatchlist =
-async(req,res,next)=>{
-    try{
+const { success } = require("../utils/responseBuilder");
+const validateResponse = require("../middlewares/validateResponse");
+const {
+    addWatchlistResponseSchema,
+    watchlistResponseSchema,
+    removeWatchlistResponseSchema
+} = require("../schemas/response/watchlist");
+const addToWatchlist = async (req, res, next) => {
 
-        const {searchId} =
-            req.body;
+    try {
+
+        const { searchId } = req.body;
 
         const result =
             await addToWatchlistService(
@@ -19,49 +23,83 @@ async(req,res,next)=>{
                 searchId
             );
 
-        res.status(201).json({
-            success:true,
-            data:result
-        });
+        const response = success(
+    "Stock added to watchlist",
+    result
+);
 
-    }catch(err){
+validateResponse(
+    addWatchlistResponseSchema,
+    response
+);
+
+return res.status(201).json(response);
+
+    } catch (err) {
+
         next(err);
+
     }
+
 };
 
-const getWatchlist =
-async(req,res,next)=>{
-    try{
+const getWatchlist = async (req, res, next) => {
+
+    try {
 
         const result =
             await getWatchlistService(
                 req.user.id
             );
 
-        res.status(200)
-           .json(result);
+        const response = success(
+    "Watchlist fetched successfully",
+    result
+);
 
-    }catch(err){
+validateResponse(
+    watchlistResponseSchema,
+    response
+);
+
+return res.status(200).json(response);
+
+    } catch (err) {
+
         next(err);
+
     }
+
 };
 
-const removeFromWatchlist = async(req,res,next)=>{
-    try{
+const removeFromWatchlist = async (req, res, next) => {
 
-        const {symbol} = req.params;
+    try {
 
-        const result =
+        const { symbol } = req.params;
+
         await removeFromWatchlistService(
             req.user.id,
             symbol
         );
 
-        res.status(200).json(result);
+        const response = success(
+            "Removed from watchlist"
+        );
 
-    }catch(err){
+        validateResponse(
+            removeWatchlistResponseSchema,
+            response
+        );
+
+        return res.status(200).json(response);
+
+    } catch (err) {
+
         next(err);
+
     }
+
 };
 module.exports = {
     addToWatchlist,

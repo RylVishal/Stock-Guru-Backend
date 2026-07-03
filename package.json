@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^8.5.0",
     "axios": "^1.18.0",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -17,7 +18,8 @@
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zod-openapi": "^5.4.6"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

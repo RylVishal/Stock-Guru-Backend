@@ -4,15 +4,16 @@ const {
     getTrendingSectors,
     getNews,
     getCompanyDetails,
-    getLivePrice,
-    searchStocks:searchStocksService,
+    searchStocks: searchStocksService,
     getChartData
 } = require("../services/marketService");
+
+const redisClient = require("../config/redis");
 
 const mostBought = async (req, res, next) => {
     try {
         const data = await getMostBoughtStocks();
-        res.status(200).json(data);
+        return res.status(200).json(data);
     } catch (err) {
         next(err);
     }
@@ -21,7 +22,7 @@ const mostBought = async (req, res, next) => {
 const topGainers = async (req, res, next) => {
     try {
         const data = await getTopMovers("TOP_GAINERS");
-        res.status(200).json(data);
+        return res.status(200).json(data);
     } catch (err) {
         next(err);
     }
@@ -30,7 +31,7 @@ const topGainers = async (req, res, next) => {
 const topLosers = async (req, res, next) => {
     try {
         const data = await getTopMovers("TOP_LOSERS");
-        res.status(200).json(data);
+        return res.status(200).json(data);
     } catch (err) {
         next(err);
     }
@@ -39,7 +40,7 @@ const topLosers = async (req, res, next) => {
 const trendingSectors = async (req, res, next) => {
     try {
         const data = await getTrendingSectors();
-        res.status(200).json(data);
+        return res.status(200).json(data);
     } catch (err) {
         next(err);
     }
@@ -48,7 +49,7 @@ const trendingSectors = async (req, res, next) => {
 const news = async (req, res, next) => {
     try {
         const data = await getNews();
-        res.status(200).json(data);
+        return res.status(200).json(data);
     } catch (err) {
         next(err);
     }
@@ -58,14 +59,15 @@ const stockDetails = async (req, res, next) => {
     try {
         const { searchId } = req.params;
 
-        const result =
-            await getCompanyDetails(searchId);
-        
-        res.status(200).json(result);
+        const data = await getCompanyDetails(searchId);
+
         await redisClient.sAdd(
-       "trackedSymbols",
-        result.header.nseScriptCode
-);
+            "trackedSymbols",
+            data.header.nseScriptCode
+        );
+
+        return res.status(200).json(data);
+
     } catch (err) {
         next(err);
     }
@@ -78,7 +80,7 @@ const searchStocks = async (req, res, next) => {
         const data =
             await searchStocksService(q);
 
-        res.status(200).json(data);
+        return res.status(200).json(data);
 
     } catch (err) {
         next(err);
@@ -101,12 +103,13 @@ const chart = async (req, res, next) => {
             type
         );
 
-        res.status(200).json(data);
+        return res.status(200).json(data);
 
     } catch (err) {
         next(err);
     }
 };
+
 module.exports = {
     mostBought,
     topGainers,

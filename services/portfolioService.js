@@ -5,6 +5,7 @@ const {
     getCompanyDetails,
     getLivePrice
 } = require("./marketService");
+const redisClient = require("../config/redis");
 const AppError = require("../utils/AppError");
     const buyStockService = async(userId,data)=>{
     const {searchId,quantity} = data;
@@ -73,18 +74,13 @@ const AppError = require("../utils/AppError");
     "trackedSymbols",
     symbol
 );
-    return{
-    success:true,
-    message:"Stock Purchased Successfully",
-    data:{
-        symbol,
-        companyName,
-        quantity,
-        price:currentPrice,
-        totalCost
-    }
-};
-};
+return {
+    symbol,
+    companyName,
+    quantity,
+    price: currentPrice,
+    totalCost
+};};
 
 const sellStockService = async(userId,data)=>{
 
@@ -165,45 +161,63 @@ const sellStockService = async(userId,data)=>{
         price: currentPrice,
         amount: saleAmount
     });
-
     return {
-        success:true,
-        message:"Stock sold successfully",
-        data:{
-            symbol,
-            quantity,
-            sellPrice: currentPrice,
-            saleAmount,
-            pnl
-        }
-    };
+    symbol,
+    quantity,
+    sellPrice: currentPrice,
+    saleAmount,
+    pnl
 };
-const getHoldingsService = async(userId)=>{
+};
+const getHoldingsService = async (userId) => {
 
     const holdings = await Holding.find({
         userId
     });
 
-    return {
-        success:true,
-        holdings
-    };
+    return holdings.map((holding) => ({
+
+        id: holding._id.toString(),
+
+        symbol: holding.symbol,
+
+        companyName: holding.companyName,
+
+        quantity: holding.quantity,
+
+        avgPrice: holding.avgPrice
+
+    }));
+
 };
 
-const getHistoryService = async(userId)=>{
+const getHistoryService = async (userId) => {
 
     const history = await Transaction.find({
         userId
     }).sort({
-        createdAt:-1
+        createdAt: -1
     });
 
-    return {
-        success:true,
-        history
-    };
-};
+    return history.map((transaction) => ({
 
+        symbol: transaction.symbol,
+
+        companyName: transaction.companyName,
+
+        type: transaction.type,
+
+        quantity: transaction.quantity,
+
+        price: transaction.price,
+
+        amount: transaction.amount,
+
+        createdAt: transaction.createdAt.toISOString()
+
+    }));
+
+};
 const getSummaryService = async(userId)=>{
 
     const portfolio = await Portfolio.findOne({
@@ -216,14 +230,11 @@ const getSummaryService = async(userId)=>{
         });
 
     return {
-        success:true,
-        summary:{
-            cashBalance:portfolio.cashBalance,
-            totalInvested:portfolio.totalInvested,
-            totalProfitLoss:portfolio.totalProfitLoss,
-            holdingsCount
-        }
-    };
+    cashBalance: portfolio.cashBalance,
+    totalInvested: portfolio.totalInvested,
+    totalProfitLoss: portfolio.totalProfitLoss,
+    holdingsCount
+};
 };
 const round = (num) =>Number(num.toFixed(2));
 const getAnalyticsService = async(userId)=>{
@@ -344,24 +355,18 @@ const getAnalyticsService = async(userId)=>{
         null;
 
     return {
-        success:true,
-
-        analytics:{
-            portfolioValue,
-            investedValue,
-            unrealizedPnL,
-            returnPercentage,
-            cashBalance:
-                portfolio.cashBalance,
-            totalAccountValue
-        },
-
-        topWinner,
-        topLoser,
-
-        holdings:
-            holdingAnalytics
-    };
+    analytics: {
+        portfolioValue: round(portfolioValue),
+        investedValue: round(investedValue),
+        unrealizedPnL: round(unrealizedPnL),
+        returnPercentage: round(returnPercentage),
+        cashBalance: round(portfolio.cashBalance),
+        totalAccountValue: round(totalAccountValue)
+    },
+    topWinner,
+    topLoser,
+    holdings: holdingAnalytics
+};
 };
 module.exports = {
     buyStockService,

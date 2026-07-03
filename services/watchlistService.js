@@ -1,76 +1,123 @@
 const Watchlist = require("../models/Watchlist");
-const { getCompanyDetails,getLivePrice } = require("./marketService");
+const {
+    getCompanyDetails,
+    getLivePrice
+} = require("./marketService");
+const redisClient = require("../config/redis");
 const AppError = require("../utils/AppError");
-const addToWatchlistService = async(userId, searchId)=>{
 
-    const company =
-        await getCompanyDetails(searchId);
+const addToWatchlistService = async (
+    userId,
+    searchId
+) => {
+const company =
+    await getCompanyDetails(searchId);
 
-    const symbol =
-        company.header.nseScriptCode;
+console.log("========== COMPANY ==========");
+console.dir(company, { depth: null });
 
-    const companyName =
-        company.header.displayName;
+const symbol =
+    company.header.nseScriptCode;
 
+console.log("Symbol:", symbol);
+
+const companyName =
+    company.header.displayName;
+
+console.log("Company Name:", companyName);
     const exists =
         await Watchlist.findOne({
             userId,
             symbol
         });
 
-    if(exists){
+    if (exists) {
+
         throw new AppError(
             "Already in watchlist",
             409
         );
+
     }
-    await redisClient.sAdd(
-    "trackedSymbols",
-    symbol
-);
-
-    return await Watchlist.create({
-        userId,
-        searchId,
-        symbol,
-        companyName
-    });
-};
-
-const getWatchlistService = async(userId)=>{
 
     const watchlist =
-        await Watchlist.find({userId});
+        await Watchlist.create({
 
-    const result =
-        await Promise.all(
-            watchlist.map(
-                async(stock)=>{
-                    const price =
-                        await getLivePrice(
-                            stock.symbol
-                        );
+            userId,
 
-                    return {
-                        symbol: stock.symbol,
-                        companyName:
-                            stock.companyName,
-                        searchId:
-                            stock.searchId,
-                        livePrice: price
-                    };
-                }
-            )
-        );
+            searchId,
+
+            symbol,
+
+            companyName
+
+        });
+
+    await redisClient.sAdd(
+        "trackedSymbols",
+        symbol
+    );
 
     return {
-        success:true,
-        watchlist: result
-    };
-};
 
-const removeFromWatchlistService =
-async(userId,symbol)=>{
+        id: watchlist._id.toString(),
+
+        searchId,
+
+        symbol,
+
+        companyName
+
+    };
+
+};
+const getWatchlistService = async (
+    userId
+) => {
+
+    const watchlist =
+        await Watchlist.find({
+            userId
+        });
+
+    return await Promise.all(
+
+        watchlist.map(
+            async (stock) => {
+
+                const livePrice =
+                    await getLivePrice(
+                        stock.symbol
+                    );
+
+                return {
+
+                    id:
+                    stock._id.toString(),
+
+                    symbol:
+                    stock.symbol,
+
+                    companyName:
+                    stock.companyName,
+
+                    searchId:
+                    stock.searchId,
+
+                    livePrice
+
+                };
+
+            }
+        )
+
+    );
+
+};
+const removeFromWatchlistService = async (
+    userId,
+    symbol
+) => {
 
     const stock =
         await Watchlist.findOne({
@@ -78,7 +125,7 @@ async(userId,symbol)=>{
             symbol
         });
 
-    if(!stock){
+    if (!stock) {
         throw new AppError(
             "Stock not found in watchlist",
             404
@@ -89,11 +136,7 @@ async(userId,symbol)=>{
         _id: stock._id
     });
 
-    return {
-        success:true,
-        message:
-        "Removed from watchlist"
-    };
+    return null;
 };
 
 module.exports = {

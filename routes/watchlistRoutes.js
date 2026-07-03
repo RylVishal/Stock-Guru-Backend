@@ -14,60 +14,13 @@ const {
     "../controllers/watchlistController"
 );
 const validate = require("../middlewares/validate");
-const {addToWatchlistSchema} = require("../validations/watchlistValidation");
-/**
- * @swagger
- * /watchlist/add:
- *   post:
- *     tags:
- *       - Watchlist
- *     security:
- *       - bearerAuth: []
- *     summary: Add stock to watchlist
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           example:
- *             searchId: infosys-ltd
- */
+const {addToWatchlistSchema,removeFromWatchlistSchema} = require("../schemas/request/watchlistValidation");
 router.post("/add",authMiddleware,validate(addToWatchlistSchema),addToWatchlist);
-/**
- * @swagger
- * /watchlist:
- *   get:
- *     tags:
- *       - Watchlist
- *     security:
- *       - bearerAuth: []
- *     summary: Get user watchlist
- */
 router.get("/",authMiddleware,getWatchlist);
-/**
- * @swagger
- * /watchlist/{symbol}:
- *   delete:
- *     tags:
- *       - Watchlist
- *     security:
- *       - bearerAuth: []
- *     summary: Remove stock from watchlist
- *     parameters:
- *       - in: path
- *         name: symbol
- *         required: true
- *         schema:
- *           type: string
- *         example: INFY
- *     responses:
- *       200:
- *         description: Removed successfully
- *         content:
- *           application/json:
- *             example:
- *               success: true
- *               message: Removed from watchlist
- */
-router.delete("/:symbol",authMiddleware,removeFromWatchlist);
-
+router.delete(
+    "/:symbol",
+    authMiddleware,
+    validate(removeFromWatchlistSchema),
+    removeFromWatchlist
+);
 module.exports = router;

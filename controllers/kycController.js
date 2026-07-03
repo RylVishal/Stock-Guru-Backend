@@ -1,55 +1,74 @@
+
 const {
     submitKYC,
-    getKYCStatus} = require("../services/kycService");
+    getKYCStatus
+} = require("../services/kycService");
 
-const submit = async(req,res,next)=>{
+const { success } = require("../utils/responseBuilder");
+const validateResponse =
+require("../middlewares/validateResponse");
+ const {
+    submitKycResponseSchema,
+    kycStatusResponseSchema
+} = require("../schemas/response/kyc");
+const submit = async (req, res, next) => {
 
-    try{
-        const kyc =
-        await submitKYC(
+    try {
+
+        const kyc = await submitKYC(
             req.user.id,
             req.body
         );
-        res.status(201).json({
-            success:true,
-            kyc
-        });
-    }
-    catch(err){
+
+        const response = success(
+    "KYC submitted successfully",
+    kyc
+);
+
+validateResponse(
+    submitKycResponseSchema,
+    response
+);
+
+return res.status(201).json(response);
+
+    } catch (err) {
 
         next(err);
+
     }
+
 };
 
-const status = async(
-    req,
-    res,
-    next
-)=>{
+const status = async (req, res, next) => {
 
-    try{
+    try {
 
-        const result =
-        await getKYCStatus(
+        const result = await getKYCStatus(
             req.user.id
         );
 
-        res.status(200).json(
-            result
-        );
+        const response = success(
+    "KYC status fetched successfully",
+    result
+);
 
-    }
-    catch(err){
+validateResponse(
+    kycStatusResponseSchema,
+    response
+);
+
+return res.status(200).json(response);
+
+    } catch (err) {
 
         next(err);
 
     }
+
 };
 
 module.exports = {
-
     submit,
-
     status
-
 };

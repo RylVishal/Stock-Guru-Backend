@@ -1,38 +1,44 @@
 const KYC = require("../models/KYC");
-const { kycSchema } = require("../validations/kycValidation");
 const AppError = require("../utils/AppError");
-const submitKYC = async(userId,data)=>{
 
-    const validatedData =
-    kycSchema.parse(data);
+const submitKYC = async (userId, data) => {
 
     const existingKYC =
-    await KYC.findOne({
-        user:userId
-    });
+        await KYC.findOne({
+            user: userId
+        });
 
-    if(existingKYC){
+    if (existingKYC) {
         throw new AppError(
             "KYC already submitted",
             409
         );
     }
- console.log("Validated Data:", validatedData);
+
     const kyc = await KYC.create({
-           user:userId,
-        ...validatedData
+        user: userId,
+        ...data
     });
 
-    return kyc;
+    return {
+    id: kyc._id.toString(),
+    fullName: kyc.fullName,
+    panNumber: kyc.panNumber,
+    aadhaarNumber: kyc.aadhaarNumber,
+    address: kyc.address,
+    dob: kyc.dob.toISOString().split("T")[0],
+    status: kyc.status
+};
 };
 
-const getKYCStatus = async(userId)=>{
+const getKYCStatus = async (userId) => {
 
-    const kyc = await KYC.findOne({
-        user:userId
-    });
+    const kyc =
+        await KYC.findOne({
+            user: userId
+        });
 
-    if(!kyc){
+    if (!kyc) {
         throw new AppError(
             "KYC not found",
             404
@@ -40,7 +46,7 @@ const getKYCStatus = async(userId)=>{
     }
 
     return {
-        status:kyc.status
+        status: kyc.status
     };
 };
 

@@ -19,7 +19,7 @@ const start = async () => {
     try {
 
         await connectDB();
-        await bootstrapTrackedSymbols();
+        // await bootstrapTrackedSymbols();
         initializeSocket(server);
 
         server.listen(env.PORT, () => {
@@ -27,7 +27,7 @@ const start = async () => {
             console.log(
                 `Server running on ${env.PORT}`
             );
-            startMarketWorker();
+            // startMarketWorker();
 
         });
 

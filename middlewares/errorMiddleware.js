@@ -1,23 +1,25 @@
+const { error } = require("../utils/responseBuilder");
 
-// const errorMiddleware = (err,req,res,next)=>{
-//     res.status(err.statusCode||500).json({
-//         success:false,
-//         message:err.message||"Internal server error!"
-//     });
-// };
+const errorMiddleware = (err, req, res, next) => {
 
-// module.exports = errorMiddleware;
+    if (err.name === "TokenExpiredError") {
+        err.statusCode = 401;
+        err.message = "Access token expired";
+    }
 
+    if (err.name === "JsonWebTokenError") {
+        err.statusCode = 401;
+        err.message = "Invalid access token";
+    }
 
-
-const errorMiddleware = (err,req,res,next)=>{
-    const statusCode = err.statusCode||500;
-    res.status(statusCode).json({
-        success:false,
-        status:err.status||"error!",
-        message:
-             err.message||"Internal Server error"
-    });
+    return res
+        .status(err.statusCode || 500)
+        .json(
+            error(
+                err.message || "Internal Server Error",
+                err.errors
+            )
+        );
 };
-module.exports = errorMiddleware;
 
+module.exports = errorMiddleware;
