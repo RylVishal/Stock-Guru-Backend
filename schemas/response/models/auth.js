@@ -6,12 +6,34 @@ const UserSchema = z.object({
     email: z.string().email()
 });
 
-const TokenSchema = z.object({
+const LoginResponseSchema = z.object({
     accessToken: z.string(),
-    refreshToken: z.string()
+    refreshToken: z.string(),
+
+    accessToken: z.string(),
+
+    refreshToken: z.string(),
+
+    user: z.object({
+
+        id: z.string(),
+
+        name: z.string(),
+
+        email: z.string().email(),
+
+        role: z.enum([
+            "user",
+            "admin"
+        ]),
+
+        kycVerified: z.boolean()
+
+    })
+
 });
 
 module.exports = {
     UserSchema,
-    TokenSchema
+    LoginResponseSchema
 };

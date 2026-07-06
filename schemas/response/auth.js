@@ -5,7 +5,7 @@ const {
 
 const {
     UserSchema,
-    TokenSchema
+    LoginResponseSchema
 } = require("./models/auth");
 
 const registerResponseSchema =
@@ -15,7 +15,7 @@ const registerResponseSchema =
 
 const loginResponseSchema =
     createSuccessResponseSchema(
-        TokenSchema
+        LoginResponseSchema
     );
 
 const messageResponseSchema =

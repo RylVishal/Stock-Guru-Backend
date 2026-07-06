@@ -85,9 +85,16 @@ const loginUser = async (email, password) => {
     await user.save();
 
     return {
-        accessToken,
-        refreshToken
-    };
+    accessToken,
+    refreshToken,
+    user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        kycVerified: user.kycVerified
+    }
+};
 };
 
 const logoutUser = async (userId) => {
