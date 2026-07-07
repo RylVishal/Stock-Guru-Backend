@@ -11,7 +11,7 @@ const marketRoutes = require("./routes/marketRoutes");
 const portfolioRoutes = require("./routes/portfolioRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
 const healthRoutes = require("./routes/healthRoutes");
-
+const mongosanitize = require("mongo-sanitize");
 const errorMiddleware = require("./middlewares/errorMiddleware");
 
 const app = express();
@@ -23,6 +23,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use(helmet());
+app.use(mongosanitize());
 
 /* ------------------------- Swagger ------------------------- */
 

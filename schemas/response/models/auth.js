@@ -7,8 +7,7 @@ const UserSchema = z.object({
 });
 
 const LoginResponseSchema = z.object({
-    accessToken: z.string(),
-    refreshToken: z.string(),
+    
 
     accessToken: z.string(),
 

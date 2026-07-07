@@ -1,6 +1,6 @@
 const Holding = require('../models/holding');
 const Watchlist = require('../models/Watchlist');
-const {getLivePrice} = require("../services/marketService");
+const {getFreshLivePrice} = require("../services/marketService");
 const redisClient = require("../config/redis");
 const sleep = require("../utils/sleep");
 const { getIO } = require("../sockets/socket");
@@ -23,7 +23,10 @@ const startMarketWorker = async ()=>{
           console.log(`Refreshing ${uniqueSymbols.length} symbols...`);
           await Promise.allSettled(
             uniqueSymbols.map(async(symbol)=>{
-                const livePrice = await getLivePrice(symbol);
+                const livePrice = await getFreshLivePrice(symbol);
+                console.log(
+    `[LIVE] ${symbol} -> ₹${livePrice}`
+);
                 await redisClient.set(
                     `market:price:${symbol}`,
                     JSON.stringify(livePrice),

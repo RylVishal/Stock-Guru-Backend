@@ -213,6 +213,8 @@ const getCompanyDetails = async(searchId)=>{
 
    return response.data
 }
+
+
 const getLivePrice = async(symbol)=>{
     const cachedKey = `market:price:${symbol}`;
     const cached = await redisClient.get(cachedKey);
@@ -243,7 +245,7 @@ const getLivePrice = async(symbol)=>{
 
     return livePrice;
 };
-
+ 
 const searchStocks = async(query)=>{
   const cachedKey = `market:search:${query}`;
   const cached = await redisClient.get(cachedKey);
@@ -317,6 +319,20 @@ const getChartData = async (
 
     return response.data;
 };
+const getFreshLivePrice = async (symbol) => {
+
+    const response = await growwClient.get(
+        `/v1/api/stocks_data/v1/tr_live_book/exchange/NSE/segment/CASH/${symbol}/latest`
+    );
+
+    const data = response.data;
+
+    return (
+        data.buyBook["1"].price +
+        data.sellBook["1"].price
+    ) / 2;
+
+};
 module.exports = {
     getMostBoughtStocks,
     getTopMovers,
@@ -325,5 +341,6 @@ module.exports = {
     getCompanyDetails,
     getLivePrice,
     searchStocks,
-    getChartData
+    getChartData,
+    getFreshLivePrice
 };
