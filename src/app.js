@@ -13,7 +13,7 @@ const watchlistRoutes = require("./routes/watchlistRoutes");
 const healthRoutes = require("./routes/healthRoutes");
 const mongoSanitize = require("express-mongo-sanitize");
 const errorMiddleware = require("./middlewares/errorMiddleware");
-
+const userRoutes = require("./routes/userRoutes");
 const app = express();
 
 /* ------------------------- Global Middlewares ------------------------- */
@@ -33,6 +33,8 @@ setupSwagger(app);
 
 app.use("/api/auth", authRoutes);
 
+app.use("/api/user",userRoutes);
+        
 app.use("/api/kyc", kycRoutes);
 
 app.use("/api/admin", adminRoutes);

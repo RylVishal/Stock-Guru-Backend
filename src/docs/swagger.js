@@ -371,6 +371,63 @@ const openApiSpec = {
         }
       }
     },
+    '/user/profile': {
+  get: {
+    tags: ['User'],
+    summary: 'Get user profile',
+    description:
+      'Returns the authenticated user profile along with the current KYC status.',
+    security: bearerSecurity,
+    responses: {
+      200: {
+        description: 'Profile fetched successfully',
+        content: {
+          'application/json': {
+            example: {
+              success: true,
+              message: 'Profile fetched successfully',
+              data: {
+                id: '6a4740cdcdaf643e6864c0ec',
+                name: 'Vishal',
+                email: 'vishal@codingmart.in',
+                role: 'user',
+                kycStatus: 'APPROVED',
+                panNumber: 'ABCDE1234F',
+                createdAt: '2026-07-08T11:15:34.000Z'
+              }
+            }
+          }
+        }
+      },
+
+      401: {
+        description: 'Unauthorized',
+        content: {
+          'application/json': {
+            example: {
+              success: false,
+              message: 'Unauthorized'
+            }
+          }
+        }
+      },
+
+      404: {
+        description: 'User not found',
+        content: {
+          'application/json': {
+            example: {
+              success: false,
+              message: 'User not found'
+            }
+          }
+        }
+      },
+
+      500: serverError
+    }
+  }
+},
     '/kyc/submit': {
       post: {
         tags: ['KYC'],
