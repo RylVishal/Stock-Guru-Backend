@@ -11,7 +11,78 @@ const redisClient = require("../config/redis");
 const { sendOTPEmail } = require("./emailService");
 const generateOTP = require("../utils/otpGenerator");
 const AppError = require("../utils/AppError");
+const jwt = require("jsonwebtoken");
 
+const env = require("../config/env");
+const refreshAccessTokenService =
+async(refreshToken)=>{
+
+    if(!refreshToken){
+
+        throw new AppError(
+            "Refresh token missing",
+            401
+        );
+
+    }
+
+    let payload;
+
+    try{
+
+        payload =
+        jwt.verify(
+            refreshToken,
+            env.JWT_REFRESH_SECRET
+        );
+
+    }
+
+    catch{
+
+        throw new AppError(
+            "Invalid refresh token",
+            401
+        );
+
+    }
+
+    const user =
+    await User.findById(
+        payload.id
+    );
+
+    if(!user){
+
+        throw new AppError(
+            "User not found",
+            404
+        );
+
+    }
+
+    if(
+        user.refreshToken !==
+        refreshToken
+    ){
+
+        throw new AppError(
+            "Refresh token mismatch",
+            401
+        );
+
+    }
+
+    const accessToken =
+    generateAccessToken(user);
+
+    return {
+
+        accessToken
+
+    };
+
+};
 const registerUser = async (data) => {
 
     const {
@@ -222,5 +293,6 @@ module.exports = {
     logoutUser,
     forgotPassword,
     verifyOTP,
-    resetPassword
+    resetPassword,
+    refreshAccessTokenService
 };

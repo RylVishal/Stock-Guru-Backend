@@ -4,7 +4,8 @@ const {
     logoutUser,
     forgotPassword,
     verifyOTP,
-    resetPassword
+    resetPassword,
+    refreshAccessTokenService
 } = require("../services/authService");
 
 const { success } = require("../utils/responseBuilder");
@@ -98,14 +99,38 @@ return res
     }
 };
 
-const refreshAccessToken = async (req, res, next) => {
+const refreshAccessToken = async (
+    req,
+    res,
+    next
+) => {
+
     try {
 
-        // Implement later
+        const token =
+            req.headers.authorization
+            ?.split(" ")[1];
 
-    } catch (err) {
-        next(err);
+        const data =
+            await refreshAccessTokenService(
+                token
+            );
+
+        return res.status(200).json(
+            success(
+                "Access token refreshed successfully",
+                data
+            )
+        );
+
     }
+
+    catch(err){
+
+        next(err);
+
+    }
+
 };
 
 const forgotPasswordController = async (req, res, next) => {
@@ -199,5 +224,6 @@ module.exports = {
     logout,
     forgotPasswordController,
     verifyOTPController,
-    resetPasswordController
+    resetPasswordController,
+    refreshAccessToken
 };

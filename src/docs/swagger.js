@@ -199,6 +199,54 @@ const openApiSpec = {
         }
       }
     },
+    '/auth/refresh-token': {
+  post: {
+    tags: ['Auth'],
+    summary: 'Refresh access token',
+    description:
+      'Generates a new access token using a valid refresh token. The refresh token must be sent in the Authorization header as a Bearer token.',
+    security: bearerSecurity,
+    responses: {
+      200: {
+        description: 'Access token refreshed successfully',
+        content: {
+          'application/json': {
+            example: {
+              success: true,
+              message: 'Access token refreshed successfully',
+              data: {
+                accessToken: 'new-jwt-access-token'
+              }
+            }
+          }
+        }
+      },
+      401: {
+        description: 'Invalid or expired refresh token',
+        content: {
+          'application/json': {
+            example: {
+              success: false,
+              message: 'Invalid refresh token'
+            }
+          }
+        }
+      },
+      404: {
+        description: 'User not found',
+        content: {
+          'application/json': {
+            example: {
+              success: false,
+              message: 'User not found'
+            }
+          }
+        }
+      },
+      500: serverError
+    }
+  }
+},
     '/auth/logout': {
       post: {
         tags: ['Auth'],
