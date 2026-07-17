@@ -9,10 +9,14 @@ const {
     news,
     stockDetails,
     searchStocks,
-    chart
+    chart,
+    getLivePriceController,
+    getLivePricesController
 } = require("../controllers/marketController");
 const validate = require("../middlewares/validate");
 const{searchStockSchema,stockDetailsSchema,chartSchema} = require("../schemas/request/marketValidation");
+const { livePriceParamsSchema, livePricesBodySchema } = require("../schemas/request/marketLivePriceValidation");
+
 
 router.get("/most-bought", mostBought);
 router.get("/top-gainers", topGainers);
@@ -31,4 +35,18 @@ router.get(
     "/chart/:symbol",
     validate(chartSchema),
     chart
-);module.exports = router;
+);
+
+router.get(
+    "/live-price/:symbol",
+    validate(livePriceParamsSchema),
+    getLivePriceController
+);
+
+router.post(
+    "/live-prices",
+    validate(livePricesBodySchema),
+    getLivePricesController
+);
+
+module.exports = router;

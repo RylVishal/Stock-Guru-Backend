@@ -10,6 +10,8 @@ const {
 
 const { success } = require("../utils/responseBuilder");
 const validateResponse = require("../middlewares/validateResponse");
+const jwt = require("jsonwebtoken");
+const env = require("../config/env");
 
 const {
     registerResponseSchema,
@@ -106,10 +108,15 @@ const refreshAccessToken = async (
 ) => {
 
     try {
-
+        // Accept token from: httpOnly cookie, request body, or Authorization header
         const token =
-            req.headers.authorization
-            ?.split(" ")[1];
+            req.cookies?.refreshToken ||
+            req.body?.refreshToken ||
+            req.headers.authorization?.split(" ")[1];
+
+        if (!token) {
+            return res.status(401).json({ status: 'error', message: 'Refresh token not found' });
+        }
 
         const data =
             await refreshAccessTokenService(

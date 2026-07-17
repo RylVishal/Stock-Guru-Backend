@@ -27,10 +27,13 @@ const AppError = require("../utils/AppError");
     const symbol = companyData.header.nseScriptCode;
     const companyName = companyData.header.displayName;
     const currentPrice = await getLivePrice(symbol);
-    const totalCost = currentPrice * quantity;
+    const roundedPrice = Number.isFinite(currentPrice)
+        ? Math.round(currentPrice * 100) / 100
+        : 0;
+    const totalCost = roundedPrice * quantity;
     if(portfolio.cashBalance < totalCost){
     throw new AppError("Insufficient Funds",400);
-    }
+    }   
     let holding = await Holding.findOne({userId,symbol});
     if(holding){
 
@@ -40,7 +43,7 @@ const AppError = require("../utils/AppError");
     const avgPrice =
         (
             holding.quantity * holding.avgPrice +
-            quantity * currentPrice
+            quantity * roundedPrice
         ) / totalQuantity;
 
     holding.quantity = totalQuantity;
@@ -55,7 +58,7 @@ const AppError = require("../utils/AppError");
         symbol,
         companyName,
         quantity,
-        avgPrice: currentPrice
+        avgPrice: roundedPrice
     });
 }
     portfolio.cashBalance -= totalCost;
@@ -67,18 +70,18 @@ const AppError = require("../utils/AppError");
     companyName,
     type:"BUY",
     quantity,
-    price:currentPrice,
+    price: roundedPrice,
     amount:totalCost
 });
     await redisClient.sAdd(
     "trackedSymbols",
     symbol
 );
-return {
+    return {
     symbol,
     companyName,
     quantity,
-    price: currentPrice,
+    price: roundedPrice,
     totalCost
 };};
 
@@ -124,11 +127,15 @@ const sellStockService = async(userId,data)=>{
     const currentPrice =
         await getLivePrice(symbol);
 
+    const roundedPrice = Number.isFinite(currentPrice)
+        ? Math.round(currentPrice * 100) / 100
+        : 0;
+
     const saleAmount =
-        currentPrice * quantity;
+        roundedPrice * quantity;
 
     const pnl =
-        (currentPrice - holding.avgPrice)
+        (roundedPrice - holding.avgPrice)
         * quantity;
 
     portfolio.cashBalance += saleAmount;
@@ -158,7 +165,7 @@ const sellStockService = async(userId,data)=>{
         companyName: holding.companyName,
         type: "SELL",
         quantity,
-        price: currentPrice,
+        price: roundedPrice,
         amount: saleAmount
     });
     return {
@@ -175,19 +182,45 @@ const getHoldingsService = async (userId) => {
         userId
     });
 
-    return holdings.map((holding) => ({
+    const holdingsWithLivePrices = await Promise.all(
+        holdings.map(async (holding) => {
+            try {
+                // Fetch current live price for each holding
+                const currentPrice = await getLivePrice(holding.symbol);
+                const quantity = Number(holding.quantity ?? 0);
+                const avgPrice = Number(holding.avgPrice ?? 0);
+                const investedValue = quantity * avgPrice;
+                const currentValue = quantity * currentPrice;
+                const pnl = currentValue - investedValue;
+                const returnPercent = investedValue > 0 ? (pnl / investedValue) * 100 : 0;
 
-        id: holding._id.toString(),
+                return {
+                    id: holding._id.toString(),
+                    symbol: holding.symbol,
+                    companyName: holding.companyName,
+                    quantity: quantity,
+                    avgPrice: avgPrice,
+                    currentPrice: currentPrice,
+                    investedValue: investedValue,
+                    currentValue: currentValue,
+                    pnl: pnl,
+                    returnPercent: returnPercent
+                };
+            } catch (error) {
+                console.error(`Failed to fetch live price for ${holding.symbol}:`, error);
+                // Return holding without live price if fetch fails
+                return {
+                    id: holding._id.toString(),
+                    symbol: holding.symbol,
+                    companyName: holding.companyName,
+                    quantity: Number(holding.quantity ?? 0),
+                    avgPrice: Number(holding.avgPrice ?? 0)
+                };
+            }
+        })
+    );
 
-        symbol: holding.symbol,
-
-        companyName: holding.companyName,
-
-        quantity: holding.quantity,
-
-        avgPrice: holding.avgPrice
-
-    }));
+    return holdingsWithLivePrices;
 
 };
 
@@ -224,17 +257,41 @@ const getSummaryService = async(userId)=>{
         userId
     });
 
-    const holdingsCount =
-        await Holding.countDocuments({
-            userId
-        });
+    if(!portfolio){
+        throw new AppError("Portfolio not found", 404);
+    }
+
+    const holdings = await Holding.find({
+        userId
+    });
+
+    let activeInvestedValue = 0;
+    let activeCurrentValue = 0;
+
+    for (const holding of holdings) {
+        try {
+            const currentPrice = await getLivePrice(holding.symbol);
+            const qty = Number(holding.quantity ?? 0);
+            const avg = Number(holding.avgPrice ?? 0);
+            activeInvestedValue += qty * avg;
+            activeCurrentValue += qty * currentPrice;
+        } catch (error) {
+            console.error(`Failed to fetch price for ${holding.symbol} in summary service:`, error);
+            const qty = Number(holding.quantity ?? 0);
+            const avg = Number(holding.avgPrice ?? 0);
+            activeInvestedValue += qty * avg;
+            activeCurrentValue += qty * avg;
+        }
+    }
+
+    const unrealizedPnL = activeCurrentValue - activeInvestedValue;
 
     return {
-    cashBalance: portfolio.cashBalance,
-    totalInvested: portfolio.totalInvested,
-    totalProfitLoss: portfolio.totalProfitLoss,
-    holdingsCount
-};
+        cashBalance: portfolio.cashBalance,
+        totalInvested: activeInvestedValue,
+        totalProfitLoss: unrealizedPnL,
+        holdingsCount: holdings.length
+    };
 };
 const round = (num) =>Number(num.toFixed(2));
 const getAnalyticsService = async(userId)=>{

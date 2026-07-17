@@ -5,8 +5,11 @@ const authMiddleware = require("../middlewares/authMiddleware");
 
 const {
     submit,
-    status
+    status,
+    getDetails,
+    updateDetails
 } = require("../controllers/kycController");
+
 const {kycSchema} = require("../schemas/request/kycValidation");
 router.post(
     "/submit",
@@ -19,6 +22,18 @@ router.get(
     "/status",
     authMiddleware,
     status
+);
+
+router.get(
+    "/details",
+    authMiddleware,
+    getDetails
+);
+
+router.patch(
+    "/update",
+    authMiddleware,
+    updateDetails
 );
 
 module.exports = router;

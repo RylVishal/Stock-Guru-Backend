@@ -1,3 +1,5 @@
+
+
 const {
     getMostBoughtStocks,
     getTopMovers,
@@ -5,7 +7,8 @@ const {
     getNews,
     getCompanyDetails,
     searchStocks: searchStocksService,
-    getChartData
+    getChartData,
+    getLivePrice
 } = require("../services/marketService");
 
 const redisClient = require("../config/redis");
@@ -110,6 +113,46 @@ const chart = async (req, res, next) => {
     }
 };
 
+const getLivePriceController = async (req, res, next) => {
+    try {
+        const symbol = req.params?.symbol || req.query?.symbol;
+
+        const livePrice = await getLivePrice(symbol);
+
+        // Keep API explicit: null means “unavailable”.
+        const rounded = livePrice == null || !Number.isFinite(livePrice)
+            ? null
+            : Math.round(livePrice * 100) / 100;
+
+        return res.status(200).json({ symbol, livePrice: rounded });
+    } catch (err) {
+        next(err);
+    }
+};
+
+const getLivePricesController = async (req, res, next) => {
+    try {
+        const { symbols } = req.body;
+
+        const results = await Promise.all(
+            symbols.map(async (s) => {
+                const livePrice = await getLivePrice(s);
+
+                const rounded = Number.isFinite(livePrice)
+                    ? Math.round(livePrice * 100) / 100
+                    : null;
+                return [s, rounded];
+            })
+        );
+
+        const pricesBySymbol = Object.fromEntries(results);
+
+        return res.status(200).json({ prices: pricesBySymbol });
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
     mostBought,
     topGainers,
@@ -118,5 +161,7 @@ module.exports = {
     news,
     stockDetails,
     searchStocks,
-    chart
+    chart,
+    getLivePriceController,
+    getLivePricesController
 };
