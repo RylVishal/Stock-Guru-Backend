@@ -6,7 +6,10 @@ const initializeSocket = (httpServer) => {
 
     io = new Server(httpServer, {
         cors: {
-            origin: "*",
+            origin: (origin, callback) => {
+                callback(null, true);
+            },
+            credentials: true,
             methods: ["GET", "POST"]
         }
     });

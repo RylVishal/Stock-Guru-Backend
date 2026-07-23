@@ -8,10 +8,11 @@ const AddedWatchlistSchema = z.object({
 });
 
 const WatchlistItemSchema = z.object({
+    id: z.string(),
     searchId: z.string(),
     symbol: z.string(),
     companyName: z.string(),
-    livePrice: z.number()
+    lastPrice: z.number().nullable()
 });
 
 module.exports = {

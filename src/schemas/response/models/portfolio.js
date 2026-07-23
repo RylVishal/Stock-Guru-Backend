@@ -11,15 +11,15 @@ const HoldingSchema = z.object({
 
     avgPrice: z.number(),
 
-    currentPrice: z.number().optional(),
+    currentPrice: z.number().nullable(),
 
-    investedValue: z.number().optional(),
+    investedValue: z.number().nullable(),
 
-    currentValue: z.number().optional(),
+    currentValue: z.number().nullable(),
 
-    pnl: z.number().optional(),
+    pnl: z.number().nullable(),
 
-    returnPercent: z.number().optional()
+    returnPercent: z.number().nullable()
 
 });
 

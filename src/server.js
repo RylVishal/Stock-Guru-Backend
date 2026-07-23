@@ -6,7 +6,7 @@ const app = require("./app");
 const connectDB = require("./config/db");
 
 const startMarketWorker =
-require("./workers/marketWorker");
+    require("./workers/marketWorker");
 
 const {
     initializeSocket
@@ -34,7 +34,7 @@ const start = async () => {
 
     }
 
-    catch(err){
+    catch (err) {
 
         console.error(err);
 

@@ -24,8 +24,21 @@ const AppError = require("../utils/AppError");
         throw new AppError("Invalid quantity",400);
     }
     const companyData = await getCompanyDetails(searchId);
-    const symbol = companyData.header.nseScriptCode;
-    const companyName = companyData.header.displayName;
+    const symbol = (
+        companyData?.header?.nseScriptCode ||
+        companyData?.header?.bseScriptCode ||
+        companyData?.header?.symbol ||
+        companyData?.symbol ||
+        searchId?.toUpperCase()
+    )?.toUpperCase()?.trim();
+
+    const companyName = (
+        companyData?.header?.displayName ||
+        companyData?.header?.companyName ||
+        companyData?.companyName ||
+        companyData?.header?.shortName ||
+        symbol
+    )?.trim();
     const currentPrice = await getLivePrice(symbol);
     const roundedPrice = Number.isFinite(currentPrice)
         ? Math.round(currentPrice * 100) / 100
@@ -118,7 +131,7 @@ const sellStockService = async(userId,data)=>{
     }
 
     if(quantity > holding.quantity){
-        throw new Error(
+        throw new AppError(
             "Insufficient shares",
             400
         );
@@ -186,9 +199,27 @@ const getHoldingsService = async (userId) => {
         holdings.map(async (holding) => {
             try {
                 // Fetch current live price for each holding
-                const currentPrice = await getLivePrice(holding.symbol);
+                let currentPrice = await getLivePrice(holding.symbol);
                 const quantity = Number(holding.quantity ?? 0);
                 const avgPrice = Number(holding.avgPrice ?? 0);
+                
+                if (currentPrice === null || currentPrice === undefined || currentPrice <= 0 || isNaN(currentPrice)) {
+                    try {
+                        const companyInfo = await getCompanyDetails(holding.symbol);
+                        const cp = companyInfo?.priceData?.nse?.lastPrice ||
+                                   companyInfo?.priceData?.bse?.lastPrice ||
+                                   companyInfo?.priceData?.nse?.closePrice ||
+                                   companyInfo?.priceData?.bse?.closePrice;
+                        if (cp && Number.isFinite(Number(cp)) && Number(cp) > 0) {
+                            currentPrice = Number(cp);
+                        } else {
+                            currentPrice = avgPrice;
+                        }
+                    } catch {
+                        currentPrice = avgPrice;
+                    }
+                }
+
                 const investedValue = quantity * avgPrice;
                 const currentValue = quantity * currentPrice;
                 const pnl = currentValue - investedValue;
@@ -208,13 +239,21 @@ const getHoldingsService = async (userId) => {
                 };
             } catch (error) {
                 console.error(`Failed to fetch live price for ${holding.symbol}:`, error);
-                // Return holding without live price if fetch fails
+                // Return holding with fallback values if fetch fails
+                const quantity = Number(holding.quantity ?? 0);
+                const avgPrice = Number(holding.avgPrice ?? 0);
+                const investedValue = quantity * avgPrice;
                 return {
                     id: holding._id.toString(),
                     symbol: holding.symbol,
                     companyName: holding.companyName,
-                    quantity: Number(holding.quantity ?? 0),
-                    avgPrice: Number(holding.avgPrice ?? 0)
+                    quantity: quantity,
+                    avgPrice: avgPrice,
+                    currentPrice: avgPrice,
+                    investedValue: investedValue,
+                    currentValue: investedValue,
+                    pnl: 0,
+                    returnPercent: 0
                 };
             }
         })
@@ -270,9 +309,27 @@ const getSummaryService = async(userId)=>{
 
     for (const holding of holdings) {
         try {
-            const currentPrice = await getLivePrice(holding.symbol);
+            let currentPrice = await getLivePrice(holding.symbol);
             const qty = Number(holding.quantity ?? 0);
             const avg = Number(holding.avgPrice ?? 0);
+            
+            if (currentPrice === null || currentPrice === undefined || currentPrice <= 0 || isNaN(currentPrice)) {
+                try {
+                    const companyInfo = await getCompanyDetails(holding.symbol);
+                    const cp = companyInfo?.priceData?.nse?.lastPrice ||
+                               companyInfo?.priceData?.bse?.lastPrice ||
+                               companyInfo?.priceData?.nse?.closePrice ||
+                               companyInfo?.priceData?.bse?.closePrice;
+                    if (cp && Number.isFinite(Number(cp)) && Number(cp) > 0) {
+                        currentPrice = Number(cp);
+                    } else {
+                        currentPrice = avg;
+                    }
+                } catch {
+                    currentPrice = avg;
+                }
+            }
+
             activeInvestedValue += qty * avg;
             activeCurrentValue += qty * currentPrice;
         } catch (error) {
@@ -280,6 +337,7 @@ const getSummaryService = async(userId)=>{
             const qty = Number(holding.quantity ?? 0);
             const avg = Number(holding.avgPrice ?? 0);
             activeInvestedValue += qty * avg;
+            // Use avg price as fallback to avoid negative P&L
             activeCurrentValue += qty * avg;
         }
     }
@@ -318,10 +376,30 @@ const getAnalyticsService = async(userId)=>{
 
     for(const holding of holdings){
 
-        const currentPrice =
-            await getLivePrice(
-                holding.symbol
-            );
+        let currentPrice = 0;
+
+        try {
+            currentPrice = await getLivePrice(holding.symbol);
+        } catch (error) {
+            console.error(`Failed to fetch price for ${holding.symbol} in analytics:`, error);
+        }
+
+        if (currentPrice === null || currentPrice === undefined || currentPrice <= 0 || isNaN(currentPrice)) {
+            try {
+                const companyInfo = await getCompanyDetails(holding.symbol);
+                const cp = companyInfo?.priceData?.nse?.lastPrice ||
+                           companyInfo?.priceData?.bse?.lastPrice ||
+                           companyInfo?.priceData?.nse?.closePrice ||
+                           companyInfo?.priceData?.bse?.closePrice;
+                if (cp && Number.isFinite(Number(cp)) && Number(cp) > 0) {
+                    currentPrice = Number(cp);
+                } else {
+                    currentPrice = holding.avgPrice || 0;
+                }
+            } catch {
+                currentPrice = holding.avgPrice || 0;
+            }
+        }
 
         const holdingInvestedValue =
             holding.quantity *

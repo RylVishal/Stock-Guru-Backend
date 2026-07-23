@@ -16,15 +16,21 @@ const company =
 console.log("========== COMPANY ==========");
 console.dir(company, { depth: null });
 
-const symbol =
-    company.header.nseScriptCode;
+const symbol = (
+    company?.header?.nseScriptCode ||
+    company?.header?.bseScriptCode ||
+    company?.header?.symbol ||
+    company?.symbol ||
+    searchId?.toUpperCase()
+)?.toUpperCase()?.trim();
 
-console.log("Symbol:", symbol);
-
-const companyName =
-    company.header.displayName;
-
-console.log("Company Name:", companyName);
+const companyName = (
+    company?.header?.displayName ||
+    company?.header?.companyName ||
+    company?.companyName ||
+    company?.header?.shortName ||
+    symbol
+)?.trim();
     const exists =
         await Watchlist.findOne({
             userId,
@@ -40,6 +46,15 @@ console.log("Company Name:", companyName);
 
     }
 
+    // Get current price for the stock
+    let livePrice = null;
+    try {
+        livePrice = await getLivePrice(symbol);
+    } catch (err) {
+        console.error(`Failed to fetch initial price for ${symbol}:`, err.message);
+        livePrice = null;
+    }
+
     const watchlist =
         await Watchlist.create({
 
@@ -49,7 +64,9 @@ console.log("Company Name:", companyName);
 
             symbol,
 
-            companyName
+            companyName,
+
+            lastPrice: livePrice
 
         });
 
@@ -85,10 +102,35 @@ const getWatchlistService = async (
         watchlist.map(
             async (stock) => {
 
-                const livePrice =
-                    await getLivePrice(
-                        stock.symbol
-                    );
+                let livePrice = null;
+
+                try {
+
+                    livePrice =
+                        await getLivePrice(
+                            stock.symbol
+                        );
+
+                } catch (err) {
+
+                    console.error(`Failed to fetch live price for ${stock.symbol}:`, err.message);
+
+                    livePrice = null;
+
+                }
+
+                // If live price is valid, update the lastPrice in database
+                if (livePrice !== null && livePrice !== undefined && Number.isFinite(Number(livePrice)) && Number(livePrice) > 0) {
+                    try {
+                        stock.lastPrice = Number(livePrice);
+                        await stock.save();
+                    } catch (saveErr) {
+                        console.warn(`Failed to save lastPrice for ${stock.symbol}:`, saveErr.message);
+                    }
+                } else {
+                    // Fallback to database's last known price if live price is unavailable
+                    livePrice = stock.lastPrice || null;
+                }
 
                 return {
 
@@ -104,7 +146,10 @@ const getWatchlistService = async (
                     searchId:
                     stock.searchId,
 
-                    livePrice
+                    livePrice,
+
+                    lastPrice:
+                        stock.lastPrice || null
 
                 };
 
