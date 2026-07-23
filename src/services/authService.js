@@ -38,10 +38,12 @@ async(refreshToken)=>{
 
     }
 
-    catch{
+    catch(err){
 
         throw new AppError(
-            "Invalid refresh token",
+            err.name === 'TokenExpiredError'
+                ? "Refresh token expired, please login again"
+                : "Invalid refresh token",
             401
         );
 
@@ -61,25 +63,18 @@ async(refreshToken)=>{
 
     }
 
-    if(
-        user.refreshToken !==
-        refreshToken
-    ){
-
-        throw new AppError(
-            "Refresh token mismatch",
-            401
-        );
-
-    }
-
+    // Issue new access token
     const accessToken =
     generateAccessToken(user);
 
+    // Rotate the refresh token and persist — keeps DB in sync
+    const newRefreshToken = generateRefreshToken(user);
+    user.refreshToken = newRefreshToken;
+    await user.save();
+
     return {
-
-        accessToken
-
+        accessToken,
+        refreshToken: newRefreshToken
     };
 
 };

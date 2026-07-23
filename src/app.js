@@ -22,7 +22,10 @@ const app = express();
 app.use(express.json());
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: (origin, callback) => {
+    // Dynamically reflect origin to satisfy credentials: true requirements without wildcard '*'
+    callback(null, true);
+  },
   credentials: true
 }));
 

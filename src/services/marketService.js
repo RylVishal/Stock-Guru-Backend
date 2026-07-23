@@ -215,16 +215,138 @@ const getChartData = async (symbol, range = "1D", type = "line") => {
     params.minimal = true;
   }
 
-  const response = await growwClient.get(
-    `/v1/api/charting_service/v2/chart/exchange/NSE/segment/CASH/${symbol}/${config.path}`,
-    { params }
-  );
+  let data = null;
+  try {
+    const response = await growwClient.get(
+      `/v1/api/charting_service/v2/chart/exchange/NSE/segment/CASH/${symbol}/${config.path}`,
+      { params }
+    );
+    data = response.data;
+  } catch (err) {
+    console.warn(`Direct chart fetch failed for ${symbol} range ${range}:`, err.message);
+  }
 
-  await redisClient.set(cachedKey, JSON.stringify(response.data), {
+  // Fallback for daily chart when market is closed (e.g. weekends/holidays/fetch error)
+  if (range.toUpperCase() === "1D" && (!data?.candles || data.candles.length === 0)) {
+    console.log(`Daily chart empty or failed for ${symbol}. Trying weekly chart fallback...`);
+    try {
+      const weeklyConfig = CHART_CONFIG["1W"];
+      const weeklyParams = { ...weeklyConfig.params };
+      if (type === "line") {
+        weeklyParams.minimal = true;
+      }
+      const weeklyResponse = await growwClient.get(
+        `/v1/api/charting_service/v2/chart/exchange/NSE/segment/CASH/${symbol}/${weeklyConfig.path}`,
+        { params: weeklyParams }
+      );
+      const weeklyData = weeklyResponse.data;
+      if (weeklyData?.candles && weeklyData.candles.length > 0) {
+        // Filter candles from the last active trading day in weekly chart
+        const lastCandle = weeklyData.candles[weeklyData.candles.length - 1];
+        const lastCandleTime = lastCandle[0];
+
+        const getISTDate = (ts) => {
+          const t = Number(ts);
+          const date = Number.isFinite(t) ? new Date(t * 1000) : new Date(ts);
+          return date.toLocaleDateString("en-US", { timeZone: "Asia/Kolkata" });
+        };
+
+        const lastActiveDayStr = getISTDate(lastCandleTime);
+        const filteredCandles = weeklyData.candles.filter(candle => {
+          return getISTDate(candle[0]) === lastActiveDayStr;
+        });
+
+        if (filteredCandles.length > 0) {
+          data = {
+            ...weeklyData,
+            candles: filteredCandles,
+            isFallback: true,
+            fallbackDate: lastActiveDayStr
+          };
+          console.log(`Successfully resolved daily chart fallback using weekly data. Active day: ${lastActiveDayStr}`);
+        }
+      }
+    } catch (fallbackErr) {
+      console.warn("Daily chart fallback using weekly data failed:", fallbackErr.message);
+    }
+  }
+
+  if (!data) {
+    throw new Error(`Failed to fetch chart data for ${symbol}`);
+  }
+
+  await redisClient.set(cachedKey, JSON.stringify(data), {
     EX: 15,
   });
 
-  return response.data;
+  return data;
+};
+
+const fetchLivePriceFromSource = async (symbol) => {
+  const normalizedSymbol = String(symbol ?? "").trim().toUpperCase();
+  if (!normalizedSymbol) return null;
+
+  // 1) Primary check: 1D Chart latest minute candle price (fast & accurate for NSE symbols)
+  try {
+    const config = CHART_CONFIG["1D"];
+    const response = await growwClient.get(
+      `/v1/api/charting_service/v2/chart/exchange/NSE/segment/CASH/${encodeURIComponent(normalizedSymbol)}/${config.path}`,
+      { params: { ...config.params, minimal: true } }
+    );
+    const data = response.data;
+    if (data?.candles && data.candles.length > 0) {
+      const latestCandle = data.candles[data.candles.length - 1];
+      const val = Array.isArray(latestCandle)
+        ? (latestCandle.length > 2 ? latestCandle[4] : latestCandle[1])
+        : (latestCandle?.close || latestCandle?.price);
+      if (val && Number.isFinite(Number(val)) && Number(val) > 0) {
+        return Number(val);
+      }
+    }
+  } catch (err) {
+    console.warn(`1D Chart price check failed for ${normalizedSymbol}:`, err.message);
+  }
+
+  // 2) Secondary check: 1W Chart latest candle price
+  try {
+    const config = CHART_CONFIG["1W"];
+    const response = await growwClient.get(
+      `/v1/api/charting_service/v2/chart/exchange/NSE/segment/CASH/${encodeURIComponent(normalizedSymbol)}/${config.path}`,
+      { params: { ...config.params, minimal: true } }
+    );
+    const data = response.data;
+    if (data?.candles && data.candles.length > 0) {
+      const latestCandle = data.candles[data.candles.length - 1];
+      const val = Array.isArray(latestCandle)
+        ? (latestCandle.length > 2 ? latestCandle[4] : latestCandle[1])
+        : (latestCandle?.close || latestCandle?.price);
+      if (val && Number.isFinite(Number(val)) && Number(val) > 0) {
+        return Number(val);
+      }
+    }
+  } catch (err) {
+    console.warn(`1W Chart price check failed for ${normalizedSymbol}:`, err.message);
+  }
+
+  // 3) Fallback: getCompanyDetails
+  try {
+    const searchIdCandidate = normalizedSymbol.toLowerCase();
+    const details = await getCompanyDetails(searchIdCandidate);
+    const cp =
+      details?.priceData?.nse?.lastPrice ||
+      details?.priceData?.bse?.lastPrice ||
+      details?.priceData?.nse?.closePrice ||
+      details?.priceData?.bse?.closePrice ||
+      details?.stats?.closePrice;
+
+    if (cp && Number.isFinite(Number(cp)) && Number(cp) > 0) {
+      return Number(cp);
+    }
+  } catch (err) {
+    console.warn(`Company details check skipped for ${normalizedSymbol}:`, err.message);
+  }
+
+  return null;
 };
 
 const getLivePrice = async (symbol) => {
@@ -233,117 +355,31 @@ const getLivePrice = async (symbol) => {
 
   const cached = await redisClient.get(cachedKey);
   if (cached) {
-    console.log("cache hit!");
     return JSON.parse(cached);
   }
 
-  console.log("cache missed!");
-  if (!normalizedSymbol) return null;
-
-  let livePrice = null;
-
-  // 1) Prefer LTP/ticker endpoint (persists during market close)
-  // If these are unavailable for a given symbol, we fall back to orderbook/chart.
-  const ltpCandidates = [
-    `/v1/api/stocks_data/v1/ltp/exchange/NSE/segment/CASH/${normalizedSymbol}/latest`,
-    `/v1/api/stocks_data/v1/ticker/exchange/NSE/segment/CASH/${normalizedSymbol}/latest`,
-    `/v1/api/stocks_data/v1/last_traded_price/exchange/NSE/segment/CASH/${normalizedSymbol}/latest`,
-    `/v1/api/stocks_data/v1/ltp/${normalizedSymbol}`,
-  ];
-
-  for (const candidatePath of ltpCandidates) {
-    try {
-      const response = await growwClient.get(candidatePath);
-      const data = response.data || {};
-
-      const maybe =
-        data?.ltp ??
-        data?.lastTradedPrice ??
-        data?.last_traded_price ??
-        data?.lastPrice ??
-        data?.price ??
-        data?.data?.ltp ??
-        data?.data?.lastTradedPrice;
-
-      if (
-        maybe !== null &&
-        maybe !== undefined &&
-        Number.isFinite(Number(maybe))
-      ) {
-        livePrice = Number(maybe);
-        break;
-      }
-    } catch {
-      // try next candidate
-    }
-  }
-
-  // 2) Fallback to orderbook (may be empty off-hours)
-  if (livePrice === null) {
-    try {
-      const response = await growwClient.get(
-        `/v1/api/stocks_data/v1/tr_live_book/exchange/NSE/segment/CASH/${normalizedSymbol}/latest`
-      );
-      const data = response.data || {};
-      const buyBook = data.buyBook || {};
-      const sellBook = data.sellBook || {};
-
-      const maybeBuy = buyBook?.["1"]?.price;
-      const maybeSell = sellBook?.["1"]?.price;
-
-      const fallbackBuy =
-        maybeBuy ??
-        (Object.keys(buyBook).length
-          ? buyBook[Object.keys(buyBook)[0]]?.price
-          : undefined);
-      const fallbackSell =
-        maybeSell ??
-        (Object.keys(sellBook).length
-          ? sellBook[Object.keys(sellBook)[0]]?.price
-          : undefined);
-
-      const obPrice = fallbackBuy ?? fallbackSell ?? null;
-      if (
-        obPrice !== null &&
-        obPrice !== undefined &&
-        Number.isFinite(Number(obPrice)) &&
-        Number(obPrice) > 0
-      ) {
-        livePrice = Number(obPrice);
-      }
-    } catch (err) {
-      console.warn(
-        `tr_live_book check failed for ${normalizedSymbol}:`,
-        err.message
-      );
-    }
-  }
-
-  // 3) Fallback: chart close price
-  if (livePrice === null || Number(livePrice) <= 0) {
-    try {
-      const chartData = await getChartData(normalizedSymbol, "1D", "line");
-      if (chartData?.candles && chartData.candles.length > 0) {
-        const latestCandle =
-          chartData.candles[chartData.candles.length - 1];
-        livePrice = latestCandle[4] || chartData.closingPrice || null;
-      } else if (chartData?.closingPrice) {
-        livePrice = chartData.closingPrice;
-      }
-    } catch (err) {
-      console.error(
-        `Chart fallback price check failed for ${normalizedSymbol}:`,
-        err.message
-      );
-    }
-  }
-
+  const livePrice = await fetchLivePriceFromSource(normalizedSymbol);
   if (livePrice !== null && livePrice !== undefined && !isNaN(Number(livePrice))) {
-    livePrice = Number(livePrice);
-    await redisClient.set(cachedKey, JSON.stringify(livePrice), { EX: 15 });
+    const numPrice = Number(livePrice);
+    await redisClient.set(cachedKey, JSON.stringify(numPrice), { EX: 10 });
+    return numPrice;
   }
 
   return livePrice;
+};
+
+// Used by marketWorker; bypasses Redis cache read so marketWorker always fetches fresh live prices from source!
+const getFreshLivePrice = async (symbol) => {
+  const normalizedSymbol = String(symbol ?? "").trim();
+  const cachedKey = `market:price:${normalizedSymbol}`;
+
+  const freshPrice = await fetchLivePriceFromSource(normalizedSymbol);
+  if (freshPrice !== null && freshPrice !== undefined && !isNaN(Number(freshPrice))) {
+    const numPrice = Number(freshPrice);
+    await redisClient.set(cachedKey, JSON.stringify(numPrice), { EX: 15 });
+    return numPrice;
+  }
+  return null;
 };
 
 const searchStocks = async (query) => {
@@ -372,11 +408,6 @@ const searchStocks = async (query) => {
   });
 
   return response.data;
-};
-
-// Used by marketWorker; keep same semantics (persist price off-hours if possible)
-const getFreshLivePrice = async (symbol) => {
-  return getLivePrice(symbol);
 };
 
 module.exports = {

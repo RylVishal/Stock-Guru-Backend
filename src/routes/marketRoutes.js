@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const {
-   mostBought,
+    mostBought,
     topGainers,
     topLosers,
     trendingSectors,
@@ -14,7 +14,7 @@ const {
     getLivePricesController
 } = require("../controllers/marketController");
 const validate = require("../middlewares/validate");
-const{searchStockSchema,stockDetailsSchema,chartSchema} = require("../schemas/request/marketValidation");
+const { searchStockSchema, stockDetailsSchema, chartSchema } = require("../schemas/request/marketValidation");
 const { livePriceParamsSchema, livePricesBodySchema } = require("../schemas/request/marketLivePriceValidation");
 
 
@@ -29,7 +29,7 @@ router.get(
     validate(stockDetailsSchema),
     stockDetails
 );
-router.get("/search",validate(searchStockSchema),searchStocks);
+router.get("/search", validate(searchStockSchema), searchStocks);
 
 router.get(
     "/chart/:symbol",

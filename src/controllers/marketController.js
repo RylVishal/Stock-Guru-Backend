@@ -64,10 +64,17 @@ const stockDetails = async (req, res, next) => {
 
         const data = await getCompanyDetails(searchId);
 
-        await redisClient.sAdd(
-            "trackedSymbols",
-            data.header.nseScriptCode
-        );
+        const symbol = (
+            data?.header?.nseScriptCode ||
+            data?.header?.bseScriptCode ||
+            data?.header?.symbol ||
+            data?.symbol ||
+            searchId?.toUpperCase()
+        )?.toUpperCase()?.trim();
+
+        if (symbol) {
+            await redisClient.sAdd("trackedSymbols", symbol);
+        }
 
         return res.status(200).json(data);
 
